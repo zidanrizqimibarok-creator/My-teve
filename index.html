@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII OS - Bypass TV Engine</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.10"></script>
+    <title>ZEII OS - Lite Streamer</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; overflow: hidden; }
         body { background: #000; font-family: 'Segoe UI', sans-serif; cursor: none; color: white; }
@@ -11,36 +11,26 @@
         #tv-screen { position: relative; width: 100vw; height: 100vh; background: #000; }
         video { width: 100%; height: 100%; object-fit: contain; background: #000; }
 
-        /* Layar No Signal (Biru Analog) */
-        #no-signal { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #00008b; display: none; flex-direction: column; 
-            align-items: center; justify-content: center; z-index: 5;
-        }
-        .msg-box { border: 4px solid white; padding: 20px; text-align: center; }
-
         /* Input Nomor Atas Kiri */
         #input-display {
-            position: absolute; top: 20px; left: 20px; font-size: 6rem;
-            color: #00fbff; font-weight: bold; text-shadow: 3px 3px 15px #000;
-            z-index: 50; font-family: 'Courier New', monospace;
+            position: absolute; top: 20px; left: 20px; font-size: 7rem;
+            color: #00fbff; font-weight: bold; text-shadow: 4px 4px 20px #000;
+            z-index: 100; font-family: monospace;
         }
 
-        /* OSD (On Screen Display) */
+        /* OSD Banner */
         #osd { 
             position: absolute; bottom: 8%; left: 5%; 
-            background: rgba(0, 0, 0, 0.85); padding: 15px 40px; 
-            border-left: 12px solid #00fbff; opacity: 0; transition: 0.3s; z-index: 10;
+            background: rgba(0, 0, 0, 0.9); padding: 15px 40px; 
+            border-left: 12px solid #00fbff; opacity: 0; transition: 0.2s; z-index: 10;
         }
         #osd.active { opacity: 1; }
         #osd h1 { font-size: 5rem; margin: 0; line-height: 1; }
 
-        /* Secret Menu 0000 */
-        #secret-menu {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 450px; background: #111; border: 4px solid #00fbff;
-            padding: 30px; display: none; z-index: 100; text-align: center;
-            box-shadow: 0 0 50px rgba(0,0,0,1);
+        /* No Signal */
+        #no-signal { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #00008b; display: none; align-items: center; justify-content: center; z-index: 5;
         }
     </style>
 </head>
@@ -48,28 +38,14 @@
 
     <div id="tv-screen">
         <div id="input-display"></div>
-
-        <div id="no-signal">
-            <div class="msg-box">
-                <h1>TIDAK ADA SINYAL</h1>
-                <p>MENCARI FREKUENSI DIGITAL...</p>
-            </div>
-        </div>
+        <div id="no-signal"><h1>TIDAK ADA SINYAL</h1></div>
 
         <video id="video-player" playsinline autoplay></video>
 
         <div id="osd">
             <h1 id="osd-num">01</h1>
-            <div id="osd-name" style="font-size: 2rem; font-weight: bold;">MEMUAT...</div>
-            <div style="font-size: 0.9rem; color: #00fbff; margin-top: 5px;">KUALITAS: AUTO | MODE: DIGITAL TV</div>
-        </div>
-
-        <div id="secret-menu">
-            <h2 style="color:#00fbff">PENGATURAN SISTEM</h2>
-            <hr style="margin:15px 0; border:1px solid #333">
-            <p>Saluran Tersedia: <span id="stat-count">...</span></p>
-            <p style="margin-top:10px">Status: <span style="color:green">Connected</span></p>
-            <p style="margin-top:20px; font-size:0.8rem; color:#888">Tekan PR/CH Atas/Bawah untuk Keluar</p>
+            <div id="osd-name" style="font-size: 2.5rem; font-weight: bold;">MEMUAT...</div>
+            <div style="color: #00fbff; font-weight: bold; margin-top: 5px;">DIGITAL DTV</div>
         </div>
     </div>
 
@@ -78,18 +54,14 @@
         const osd = document.getElementById('osd');
         const noSignal = document.getElementById('no-signal');
         const inputDisplay = document.getElementById('input-display');
-        const secretMenu = document.getElementById('secret-menu');
         
         let channels = [];
         let currentIndex = 0;
         let numBuffer = "";
-        let hls = new Hls();
+        let hls = null;
 
-        // MENGGUNAKAN PROXY UNTUK BYPASS BLANK HITAM (CORS)
-        const proxy = "https://api.allorigins.win/raw?url=";
-        const m3uUrl = "https://iptv-org.github.io/iptv/languages/ind.m3u";
-
-        fetch(proxy + encodeURIComponent(m3uUrl))
+        // Ambil Data M3U (Direct Load agar lebih cepat)
+        fetch("https://iptv-org.github.io/iptv/languages/ind.m3u")
             .then(res => res.text())
             .then(data => {
                 const lines = data.split('\n');
@@ -100,7 +72,6 @@
                         if(url) channels.push({ name, url });
                     }
                 }
-                document.getElementById('stat-count').innerText = channels.length;
                 playChannel(0);
             }).catch(() => { noSignal.style.display = 'flex'; });
 
@@ -112,69 +83,68 @@
             const ch = channels[index];
             noSignal.style.display = 'none';
             
-            // UI Update
+            // UI Update Langsung (Nggak nunggu video)
             document.getElementById('osd-num').innerText = (index + 1).toString().padStart(2, '0');
             document.getElementById('osd-name').innerText = ch.name;
             osd.classList.add('active');
             clearTimeout(window.osdTimer);
-            window.osdTimer = setTimeout(() => osd.classList.remove('active'), 5000);
+            window.osdTimer = setTimeout(() => osd.classList.remove('active'), 3000);
 
-            // Engine Play
-            if (Hls.isSupported()) {
+            // Bersihkan engine lama total agar RAM TV lega
+            if (hls) {
                 hls.destroy();
+                hls = null;
+            }
+
+            if (Hls.isSupported()) {
                 hls = new Hls({
-                    // Tuning khusus untuk Smart TV Low-End
                     enableWorker: true,
-                    xhrSetup: function(xhr) { xhr.withCredentials = false; }
+                    manifestLoadingTimeOut: 5000,
+                    fragLoadingTimeOut: 5000,
+                    startLevel: 0 // Mulai dari kualitas rendah agar cepat muncul
                 });
                 hls.loadSource(ch.url);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
                 
-                // Jika 15 detik gagal load, anggap No Signal
-                hls.on(Hls.Events.ERROR, (event, data) => {
+                // Deteksi Error Fatal
+                hls.on(Hls.Events.ERROR, (e, data) => {
                     if (data.fatal) noSignal.style.display = 'flex';
                 });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Untuk WebOS / Tizen yang mendukung native HLS
+            } else {
                 video.src = ch.url;
+                video.play();
             }
+
+            // AUTO-REFRESH: Jika dalam 7 detik video nggak jalan, coba paksa putar lagi
+            clearTimeout(window.refreshTimer);
+            window.refreshTimer = setTimeout(() => {
+                if (video.paused || video.readyState < 2) {
+                    console.log("Retry loading...");
+                    playChannel(currentIndex);
+                }
+            }, 7000);
         }
 
-        // --- MESIN NAVIGASI SEMUA JENIS REMOTE TV ---
         window.addEventListener('keydown', (e) => {
-            const key = e.key;
             const code = e.keyCode;
+            const key = e.key;
 
-            // List kode tombol PR/CH (Channel Up/Down) dari berbagai merk TV
-            const chUp = (key === "ChannelUp" || key === "ArrowUp" || code === 427 || code === 33 || code === 166);
-            const chDown = (key === "ChannelDown" || key === "ArrowDown" || code === 428 || code === 34 || code === 167);
+            // Navigasi PR/CH
+            if (key === "ArrowUp" || code === 427 || code === 33) playChannel(currentIndex + 1);
+            if (key === "ArrowDown" || code === 428 || code === 34) playChannel(currentIndex - 1);
 
-            if (chUp) {
-                if (secretMenu.style.display === 'block') secretMenu.style.display = 'none';
-                else playChannel(currentIndex + 1);
-            }
-            if (chDown) {
-                if (secretMenu.style.display === 'block') secretMenu.style.display = 'none';
-                else playChannel(currentIndex - 1);
-            }
-
-            // Shortcut Nomor 0000 & Angka
+            // Shortcut Angka
             if (/[0-9]/.test(key)) {
                 numBuffer += key;
                 inputDisplay.innerText = numBuffer;
-                
                 clearTimeout(window.numTimer);
                 window.numTimer = setTimeout(() => {
-                    if (numBuffer === "0000") {
-                        secretMenu.style.display = 'block';
-                    } else {
-                        const target = parseInt(numBuffer) - 1;
-                        if (channels[target]) playChannel(target);
-                    }
+                    const target = parseInt(numBuffer) - 1;
+                    if (channels[target]) playChannel(target);
                     numBuffer = "";
                     inputDisplay.innerText = "";
-                }, 1500);
+                }, 800); // Respon angka dipercepat
             }
         });
 
