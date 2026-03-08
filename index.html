@@ -2,42 +2,41 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V29 - Standalone</title>
+    <title>ZEII TV V30 - HYPER ENGINE</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        * { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; }
+        * { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; color: white; }
         video { position: absolute; width: 100vw; height: 100vh; object-fit: fill; z-index: 1; }
         
-        /* Menu Scroll TV */
+        /* Menu Shortcut TV */
         #menu-tv {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            width: 400px; max-height: 500px; background: rgba(0, 5, 15, 0.95);
-            border: 2px solid #00fbff; border-radius: 20px; z-index: 500;
+            width: 80%; max-width: 500px; height: 70vh; background: rgba(0, 10, 20, 0.95);
+            border: 3px solid #00fbff; border-radius: 20px; z-index: 500;
             display: none; flex-direction: column; overflow: hidden;
-            box-shadow: 0 0 50px rgba(0, 251, 255, 0.3);
+            box-shadow: 0 0 100px rgba(0, 251, 255, 0.5);
         }
-        .menu-header { padding: 15px; background: #00fbff; color: #000; font-weight: bold; text-align: center; }
-        .ch-list { overflow-y: auto; flex: 1; }
+        .menu-header { padding: 20px; background: #00fbff; color: #000; font-weight: bold; text-align: center; font-size: 1.2rem; }
+        .ch-list { overflow-y: auto; flex: 1; padding: 10px; }
         .ch-item { 
-            padding: 15px 20px; border-bottom: 1px solid #111; cursor: pointer;
-            transition: 0.2s; display: flex; justify-content: space-between;
+            padding: 15px; border-bottom: 1px solid #1a1a1a; cursor: pointer;
+            display: flex; align-items: center; border-radius: 10px; margin-bottom: 5px;
         }
-        .ch-item:hover, .ch-item.active { background: #00fbff; color: #000; }
-        
+        .ch-item:hover { background: #00fbff; color: #000; }
+        .ch-num { font-weight: bold; margin-right: 15px; color: #00fbff; min-width: 30px; }
+        .ch-item:hover .ch-num { color: #000; }
+
         #num-display { 
             position: absolute; top: 10%; right: 10%; font-size: 8rem; 
             color: #00fbff; font-weight: bold; z-index: 1000; display: none; 
+            text-shadow: 0 0 20px #00fbff;
         }
 
         #osd { 
             position: absolute; bottom: 5%; left: 5%; width: 90%; 
-            background: rgba(0,0,0,0.8); padding: 15px; border-left: 8px solid #00fbff; 
-            z-index: 10; display: none; 
+            background: rgba(0,0,0,0.85); padding: 20px; border-left: 10px solid #00fbff; 
+            z-index: 10; display: none; border-radius: 0 15px 15px 0;
         }
-
-        /* Custom Scrollbar */
-        .ch-list::-webkit-scrollbar { width: 8px; }
-        .ch-list::-webkit-scrollbar-thumb { background: #00fbff; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -45,15 +44,16 @@
     <div id="num-display"></div>
 
     <div id="menu-tv">
-        <div class="menu-header">DAFTAR CHANNEL (Kode: 1111)</div>
-        <div class="ch-list" id="list-container">
-            <div style="padding:20px; text-align:center;">Memuat satelit...</div>
-        </div>
+        <div class="menu-header">SELECT CHANNEL (CODE: 1111)</div>
+        <div class="ch-list" id="list-container"></div>
     </div>
 
     <div id="osd">
-        <h2 id="ch-title">MENGHUBUNGKAN...</h2>
-        <p id="status-txt" style="color:#00fbff;">Sinyal Terkunci</p>
+        <h2 id="ch-title">CONNECTING...</h2>
+        <div style="width:100%; height:10px; background:#222; margin-top:10px; border-radius:5px; overflow:hidden;">
+            <div id="bar" style="width:0%; height:100%; background:#00fbff; transition:0.5s;"></div>
+        </div>
+        <p style="color:#00fbff; font-size:0.8rem; margin-top:5px; font-weight:bold;">BYPASS ENGINE V30 ACTIVE</p>
     </div>
 
     <script>
@@ -62,17 +62,23 @@
         const listContainer = document.getElementById('list-container');
         const numDisp = document.getElementById('num-display');
         const osd = document.getElementById('osd');
+        const bar = document.getElementById('bar');
         
         let channels = [];
-        let hls = new Hls();
+        let hls = null;
         let inputCode = "";
         let inputTimeout;
         let currentAV = "AVS1";
 
-        // Load Playlist Lokal (No Firebase)
+        // Proxy untuk bypass blokir (CORS)
+        const proxy = "https://api.allorigins.win/raw?url=";
+
         function fetchPlaylist() {
-            const url = (currentAV === "AVS2") ? "https://iptv-org.github.io/iptv/categories/kids.m3u" : "https://iptv-org.github.io/iptv/languages/ind.m3u";
-            fetch(url).then(r => r.text()).then(data => {
+            const baseUrl = (currentAV === "AVS2") ? "https://iptv-org.github.io/iptv/categories/kids.m3u" : "https://iptv-org.github.io/iptv/languages/ind.m3u";
+            
+            listContainer.innerHTML = "<div style='text-align:center;padding:20px;'>Syncing Satellite...</div>";
+            
+            fetch(baseUrl).then(r => r.text()).then(data => {
                 const lines = data.split('\n');
                 channels = [];
                 listContainer.innerHTML = "";
@@ -85,13 +91,15 @@
                         
                         let div = document.createElement('div');
                         div.className = "ch-item";
-                        div.innerHTML = `<span>${count + 1}. ${name}</span> <small>LIVE</small>`;
+                        div.innerHTML = `<span class="ch-num">${count + 1}</span> <span>${name}</span>`;
                         let idx = count;
                         div.onclick = () => playChannel(idx);
                         listContainer.appendChild(div);
                         count++;
                     }
                 }
+            }).catch(() => {
+                listContainer.innerHTML = "<div style='color:red;padding:20px;'>Connection Failed. Check Internet.</div>";
             });
         }
 
@@ -99,22 +107,40 @@
             const ch = channels[idx];
             if(!ch) return;
             
-            // Tutup menu otomatis setelah pilih
             menu.style.display = 'none';
             osd.style.display = 'block';
             document.getElementById('ch-title').innerText = ch.name;
+            bar.style.width = "30%";
 
             if (hls) hls.destroy();
-            hls = new Hls();
+            hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+                backBufferLength: 90
+            });
+
+            // Coba putar langsung, jika gagal HLS akan menghandle
             hls.loadSource(ch.link);
             hls.attachMedia(tv);
             
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                bar.style.width = "100%";
+                tv.play();
+            });
+
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    console.log("Retrying with Proxy...");
+                    // Jika gagal total, coba lewat proxy
+                    hls.loadSource(proxy + encodeURIComponent(ch.link));
+                }
+            });
+
             tv.onplaying = () => {
-                setTimeout(() => { osd.style.display = 'none'; }, 2000);
+                setTimeout(() => { osd.style.display = 'none'; bar.style.width = "0%"; }, 2000);
             };
         }
 
-        // Handle Input Keyboard/Remote Fisik
         window.addEventListener('keydown', (e) => {
             if (e.key >= '0' && e.key <= '9') {
                 inputCode += e.key;
@@ -131,23 +157,17 @@
         });
 
         function processCode(code) {
-            // Kode 1111: Buka/Tutup Menu
             if (code === "1111") {
                 menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
-            }
-            // Kode 0000: Ganti Mode AV
-            else if (code === "0000") {
+            } else if (code === "0000") {
                 currentAV = (currentAV === "AVS1") ? "AVS2" : "AVS1";
                 fetchPlaylist();
-            }
-            // Angka Biasa: Pindah Channel
-            else {
+            } else {
                 let idx = parseInt(code) - 1;
                 if (channels[idx]) playChannel(idx);
             }
         }
 
-        // Start TV
         fetchPlaylist();
     </script>
 </body>
