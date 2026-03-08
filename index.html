@@ -2,129 +2,156 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V12 - FINAL</title>
+    <title>ZEII OS - Lite Streamer</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        /* Memaksa Fullscreen Tanpa Celah */
-        * { margin: 0; padding: 0; border: 0; overflow: hidden; background: #000; }
-        body, html { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        * { box-sizing: border-box; margin: 0; padding: 0; overflow: hidden; }
+        body { background: #000; font-family: 'Segoe UI', sans-serif; cursor: none; color: white; }
         
-        /* Video memenuhi seluruh layar TV */
-        video { 
-            position: absolute; top: 0; left: 0;
-            width: 100vw; height: 100vh; 
-            object-fit: fill; /* fill = Paksa Fullscreen | contain = Original Ratio */
-        }
-        
-        #num { 
-            position: absolute; top: 30px; left: 30px; 
-            font-size: 100px; font-weight: bold; color: #00fbff; z-index: 100;
-            font-family: 'Courier New', monospace;
+        #tv-screen { position: relative; width: 100vw; height: 100vh; background: #000; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+        /* Input Nomor Atas Kiri */
+        #input-display {
+            position: absolute; top: 20px; left: 20px; font-size: 7rem;
+            color: #00fbff; font-weight: bold; text-shadow: 4px 4px 20px #000;
+            z-index: 100; font-family: monospace;
         }
 
-        #osd {
-            position: absolute; bottom: 10%; left: 5%;
-            padding: 20px 40px; border-left: 10px solid #00fbff;
-            background: rgba(0,0,0,0.8); z-index: 90; display: none;
+        /* OSD Banner */
+        #osd { 
+            position: absolute; bottom: 8%; left: 5%; 
+            background: rgba(0, 0, 0, 0.9); padding: 15px 40px; 
+            border-left: 12px solid #00fbff; opacity: 0; transition: 0.2s; z-index: 10;
+        }
+        #osd.active { opacity: 1; }
+        #osd h1 { font-size: 5rem; margin: 0; line-height: 1; }
+
+        /* No Signal */
+        #no-signal { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #00008b; display: none; align-items: center; justify-content: center; z-index: 5;
         }
     </style>
 </head>
-<body onclick="startFull()">
+<body onclick="initTV()">
 
-    <div id="num"></div>
-    <div id="osd">
-        <h1 id="ch-name" style="color: white; font-size: 3rem;"></h1>
-        <p style="color: #00fbff; font-weight: bold;">SIGNAL: DIGITAL STABLE</p>
+    <div id="tv-screen">
+        <div id="input-display"></div>
+        <div id="no-signal"><h1>TIDAK ADA SINYAL</h1></div>
+
+        <video id="video-player" playsinline autoplay></video>
+
+        <div id="osd">
+            <h1 id="osd-num">01</h1>
+            <div id="osd-name" style="font-size: 2.5rem; font-weight: bold;">MEMUAT...</div>
+            <div style="color: #00fbff; font-weight: bold; margin-top: 5px;">DIGITAL DTV</div>
+        </div>
     </div>
-    
-    <video id="tv" playsinline autoplay></video>
 
     <script>
-        const tv = document.getElementById('tv');
-        const num = document.getElementById('num');
+        const video = document.getElementById('video-player');
         const osd = document.getElementById('osd');
-        const chName = document.getElementById('ch-name');
+        const noSignal = document.getElementById('no-signal');
+        const inputDisplay = document.getElementById('input-display');
         
         let channels = [];
-        let current = 0;
-        let buffer = "";
-        let hls = new Hls();
+        let currentIndex = 0;
+        let numBuffer = "";
+        let hls = null;
 
-        // Ambil Data - Pakai Multi-Source agar Sinyal Lebih Banyak yang Ada
-        const sourceUrl = "https://iptv-org.github.io/iptv/languages/ind.m3u";
-
-        fetch(sourceUrl)
-            .then(r => r.text())
+        // Ambil Data M3U (Direct Load agar lebih cepat)
+        fetch("https://iptv-org.github.io/iptv/languages/ind.m3u")
+            .then(res => res.text())
             .then(data => {
                 const lines = data.split('\n');
                 for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].includes('#EXTINF')) {
+                    if (lines[i].startsWith('#EXTINF')) {
                         const name = lines[i].split(',')[1].trim();
-                        const url = lines[i+1].trim();
-                        if(url.startsWith('http')) channels.push({ name, url });
+                        const url = lines[i+1]?.trim();
+                        if(url) channels.push({ name, url });
                     }
                 }
-                play(0);
-            });
+                playChannel(0);
+            }).catch(() => { noSignal.style.display = 'flex'; });
 
-        function play(idx) {
-            if (idx < 0) idx = channels.length - 1;
-            if (idx >= channels.length) idx = 0;
-            current = idx;
+        function playChannel(index) {
+            if (index < 0) index = channels.length - 1;
+            if (index >= channels.length) index = 0;
+            currentIndex = index;
+            
+            const ch = channels[index];
+            noSignal.style.display = 'none';
+            
+            // UI Update Langsung (Nggak nunggu video)
+            document.getElementById('osd-num').innerText = (index + 1).toString().padStart(2, '0');
+            document.getElementById('osd-name').innerText = ch.name;
+            osd.classList.add('active');
+            clearTimeout(window.osdTimer);
+            window.osdTimer = setTimeout(() => osd.classList.remove('active'), 3000);
 
-            // Tampilkan Info Saluran
-            chName.innerText = (idx + 1) + ". " + channels[idx].name;
-            osd.style.display = 'block';
-            clearTimeout(window.oTimer);
-            window.oTimer = setTimeout(() => osd.style.display = 'none', 4000);
+            // Bersihkan engine lama total agar RAM TV lega
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
 
-            // Engine Start
-            if (hls) hls.destroy();
-            hls = new Hls({
-                enableWorker: true,
-                lowLatencyMode: true,
-                backBufferLength: 0 // Hemat RAM TV
-            });
+            if (Hls.isSupported()) {
+                hls = new Hls({
+                    enableWorker: true,
+                    manifestLoadingTimeOut: 5000,
+                    fragLoadingTimeOut: 5000,
+                    startLevel: 0 // Mulai dari kualitas rendah agar cepat muncul
+                });
+                hls.loadSource(ch.url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                
+                // Deteksi Error Fatal
+                hls.on(Hls.Events.ERROR, (e, data) => {
+                    if (data.fatal) noSignal.style.display = 'flex';
+                });
+            } else {
+                video.src = ch.url;
+                video.play();
+            }
 
-            hls.loadSource(channels[idx].url);
-            hls.attachMedia(tv);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => tv.play());
-
-            // AUTO-FIX: Jika sinyal hilang (error), coba reconnect otomatis
-            hls.on(Hls.Events.ERROR, (e, data) => {
-                if (data.fatal) {
-                    console.log("Signal Lost, Reconnecting...");
-                    hls.startLoad();
+            // AUTO-REFRESH: Jika dalam 7 detik video nggak jalan, coba paksa putar lagi
+            clearTimeout(window.refreshTimer);
+            window.refreshTimer = setTimeout(() => {
+                if (video.paused || video.readyState < 2) {
+                    console.log("Retry loading...");
+                    playChannel(currentIndex);
                 }
-            });
+            }, 7000);
         }
 
-        // Handle Fullscreen & Play
-        function startFull() {
-            if (tv.requestFullscreen) tv.requestFullscreen();
-            else if (tv.webkitRequestFullscreen) tv.webkitRequestFullscreen();
-            tv.play();
-        }
-
-        // Navigasi Remote
         window.addEventListener('keydown', (e) => {
-            const c = e.keyCode;
-            // PR/CH Keys
-            if (c == 33 || c == 427 || e.key == "ArrowUp") play(current + 1);
-            if (c == 34 || c == 428 || e.key == "ArrowDown") play(current - 1);
+            const code = e.keyCode;
+            const key = e.key;
 
-            // Angka Shortcut
-            if (/[0-9]/.test(e.key)) {
-                buffer += e.key;
-                num.innerText = buffer;
-                clearTimeout(window.nTimer);
-                window.nTimer = setTimeout(() => {
-                    let target = parseInt(buffer) - 1;
-                    if (channels[target]) play(target);
-                    buffer = ""; num.innerText = "";
-                }, 800);
+            // Navigasi PR/CH
+            if (key === "ArrowUp" || code === 427 || code === 33) playChannel(currentIndex + 1);
+            if (key === "ArrowDown" || code === 428 || code === 34) playChannel(currentIndex - 1);
+
+            // Shortcut Angka
+            if (/[0-9]/.test(key)) {
+                numBuffer += key;
+                inputDisplay.innerText = numBuffer;
+                clearTimeout(window.numTimer);
+                window.numTimer = setTimeout(() => {
+                    const target = parseInt(numBuffer) - 1;
+                    if (channels[target]) playChannel(target);
+                    numBuffer = "";
+                    inputDisplay.innerText = "";
+                }, 800); // Respon angka dipercepat
             }
         });
+
+        function initTV() {
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+            video.play();
+        }
     </script>
 </body>
 </html>
