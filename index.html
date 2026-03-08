@@ -2,151 +2,128 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V18 - Truth Engine</title>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <title>ZEII TV V12 - FINAL</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        * { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
-        video { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: fill; z-index: 1; }
+        /* Memaksa Fullscreen Tanpa Celah */
+        * { margin: 0; padding: 0; border: 0; overflow: hidden; background: #000; }
+        body, html { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         
-        /* Kotak OSD Tipis & Modern */
-        #osd {
-            position: absolute; bottom: 5%; left: 5%; width: 90%;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 15px 30px; border-left: 8px solid #00fbff;
-            color: white; z-index: 10; display: none; opacity: 1;
-            box-shadow: 0 0 20px rgba(0,0,0,1);
+        /* Video memenuhi seluruh layar TV */
+        video { 
+            position: absolute; top: 0; left: 0;
+            width: 100vw; height: 100vh; 
+            object-fit: fill; /* fill = Paksa Fullscreen | contain = Original Ratio */
+        }
+        
+        #num { 
+            position: absolute; top: 30px; left: 30px; 
+            font-size: 100px; font-weight: bold; color: #00fbff; z-index: 100;
+            font-family: 'Courier New', monospace;
         }
 
-        .signal-grid { display: flex; gap: 30px; margin-top: 8px; font-family: monospace; }
-        .stat-item { font-size: 0.8rem; color: #aaa; }
-        .val { color: #00fbff; font-weight: bold; }
-
-        /* Progress Bar Nyata */
-        .bar-cont { width: 120px; height: 4px; background: #222; margin-top: 4px; border-radius: 2px; }
-        #real-bar { height: 100%; width: 0%; background: #00fbff; transition: 0.1s; }
-
-        #error-msg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000022; display: none; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 30; color: white;
+        #osd {
+            position: absolute; bottom: 10%; left: 5%;
+            padding: 20px 40px; border-left: 10px solid #00fbff;
+            background: rgba(0,0,0,0.8); z-index: 90; display: none;
         }
     </style>
 </head>
-<body onclick="tv.play()">
+<body onclick="startFull()">
+
+    <div id="num"></div>
+    <div id="osd">
+        <h1 id="ch-name" style="color: white; font-size: 3rem;"></h1>
+        <p style="color: #00fbff; font-weight: bold;">SIGNAL: DIGITAL STABLE</p>
+    </div>
     
     <video id="tv" playsinline autoplay></video>
 
-    <div id="osd">
-        <h2 id="ch-info" style="text-transform: uppercase; letter-spacing: 1px;">MEMUAT...</h2>
-        <div class="signal-grid">
-            <div class="stat-item">BUFFER DATA: <span id="buf-val" class="val">0%</span>
-                <div class="bar-cont"><div id="real-bar"></div></div>
-            </div>
-            <div class="stat-item">DECODER: <span id="dec-stat" class="val">STANDBY</span></div>
-            <div class="stat-item">LATENCY: <span id="lat-val" class="val">0ms</span></div>
-        </div>
-    </div>
-
-    <div id="error-msg">
-        <div style="font-size:6rem; color:red; border:6px solid red; border-radius:50%; width:120px; height:120px; display:flex; align-items:center; justify-content:center; font-weight:bold;">!</div>
-        <h1 style="margin-top:15px;">SINYAL TERACAK</h1>
-    </div>
-
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBoS3INezO0UQptcXYNZFbnPbmmf_hU8xc",
-            authDomain: "xbook-global26.firebaseapp.com",
-            databaseURL: "https://xbook-global26-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "xbook-global26"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
         const tv = document.getElementById('tv');
+        const num = document.getElementById('num');
         const osd = document.getElementById('osd');
-        const errorMsg = document.getElementById('error-msg');
+        const chName = document.getElementById('ch-name');
         
         let channels = [];
+        let current = 0;
+        let buffer = "";
         let hls = new Hls();
-        let tracker;
 
-        fetch("https://iptv-org.github.io/iptv/languages/ind.m3u")
+        // Ambil Data - Pakai Multi-Source agar Sinyal Lebih Banyak yang Ada
+        const sourceUrl = "https://iptv-org.github.io/iptv/languages/ind.m3u";
+
+        fetch(sourceUrl)
             .then(r => r.text())
             .then(data => {
                 const lines = data.split('\n');
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].includes('#EXTINF')) {
-                        channels.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
+                        const name = lines[i].split(',')[1].trim();
+                        const url = lines[i+1].trim();
+                        if(url.startsWith('http')) channels.push({ name, url });
                     }
                 }
+                play(0);
             });
 
-        function trackRealData() {
-            // Cek buffer asli dari elemen video
-            if (tv.buffered.length > 0) {
-                const end = tv.buffered.end(tv.buffered.length - 1);
-                const current = tv.currentTime;
-                const bufferSeconds = end - current;
-                
-                // Progress berdasarkan ketersediaan 3 detik pertama (syarat minimal gambar muncul)
-                let pct = Math.round((bufferSeconds / 3) * 100);
-                if (pct > 100) pct = 100;
-                
-                document.getElementById('buf-val').innerText = pct + "%";
-                document.getElementById('real-bar').style.width = pct + "%";
-                document.getElementById('lat-val').innerText = Math.round(hls.latency * 1000) + "ms";
-                
-                if (pct > 10) document.getElementById('dec-stat').innerText = "PROCESSING";
-            }
-        }
-
         function play(idx) {
-            const ch = channels[idx];
-            if (!ch) return;
+            if (idx < 0) idx = channels.length - 1;
+            if (idx >= channels.length) idx = 0;
+            current = idx;
 
-            errorMsg.style.display = 'none';
+            // Tampilkan Info Saluran
+            chName.innerText = (idx + 1) + ". " + channels[idx].name;
             osd.style.display = 'block';
-            osd.style.opacity = '1';
-            document.getElementById('dec-stat').innerText = "TUNING";
-            document.getElementById('ch-info').innerText = `${(idx+1)} | ${ch.name}`;
+            clearTimeout(window.oTimer);
+            window.oTimer = setTimeout(() => osd.style.display = 'none', 4000);
 
+            // Engine Start
             if (hls) hls.destroy();
-            hls = new Hls();
-            hls.loadSource(ch.url);
+            hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+                backBufferLength: 0 // Hemat RAM TV
+            });
+
+            hls.loadSource(channels[idx].url);
             hls.attachMedia(tv);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => tv.play());
 
-            clearInterval(tracker);
-            tracker = setInterval(trackRealData, 200);
-
-            // EVENT PALING JUJUR: Gambar sudah keluar
-            tv.onplaying = () => {
-                document.getElementById('dec-stat').innerText = "READY";
-                document.getElementById('buf-val').innerText = "100%";
-                document.getElementById('real-bar').style.width = "100%";
-                db.ref("status/" + idx).set("online");
-                
-                // Gambar muncul = Kotak kabur dalam 2 detik
-                setTimeout(() => {
-                    osd.style.opacity = '0';
-                    setTimeout(() => { osd.style.display = 'none'; clearInterval(tracker); }, 500);
-                }, 2000);
-            };
-
+            // AUTO-FIX: Jika sinyal hilang (error), coba reconnect otomatis
             hls.on(Hls.Events.ERROR, (e, data) => {
                 if (data.fatal) {
-                    osd.style.display = 'none';
-                    errorMsg.style.display = 'flex';
-                    db.ref("status/" + idx).set("offline");
-                    clearInterval(tracker);
+                    console.log("Signal Lost, Reconnecting...");
+                    hls.startLoad();
                 }
             });
         }
 
-        db.ref("current_channel").on("value", (snap) => {
-            const index = snap.val();
-            if (index !== null) play(index);
+        // Handle Fullscreen & Play
+        function startFull() {
+            if (tv.requestFullscreen) tv.requestFullscreen();
+            else if (tv.webkitRequestFullscreen) tv.webkitRequestFullscreen();
+            tv.play();
+        }
+
+        // Navigasi Remote
+        window.addEventListener('keydown', (e) => {
+            const c = e.keyCode;
+            // PR/CH Keys
+            if (c == 33 || c == 427 || e.key == "ArrowUp") play(current + 1);
+            if (c == 34 || c == 428 || e.key == "ArrowDown") play(current - 1);
+
+            // Angka Shortcut
+            if (/[0-9]/.test(e.key)) {
+                buffer += e.key;
+                num.innerText = buffer;
+                clearTimeout(window.nTimer);
+                window.nTimer = setTimeout(() => {
+                    let target = parseInt(buffer) - 1;
+                    if (channels[target]) play(target);
+                    buffer = ""; num.innerText = "";
+                }, 800);
+            }
         });
     </script>
 </body>
