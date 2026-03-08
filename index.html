@@ -2,154 +2,186 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZEII TV V10</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>ZEII OS - Bypass TV Engine</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.10"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; overflow: hidden; }
-        body { background: #000; font-family: sans-serif; color: white; cursor: none; }
-        #tv-screen { position: relative; width: 100vw; height: 100vh; }
-        video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+        body { background: #000; font-family: 'Segoe UI', sans-serif; cursor: none; color: white; }
         
-        /* Indikator Loading / Blank */
-        #loader {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 1.5rem; color: #00fbff; font-weight: bold; z-index: 20; display: none;
+        #tv-screen { position: relative; width: 100vw; height: 100vh; background: #000; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+        /* Layar No Signal (Biru Analog) */
+        #no-signal { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #00008b; display: none; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 5;
+        }
+        .msg-box { border: 4px solid white; padding: 20px; text-align: center; }
+
+        /* Input Nomor Atas Kiri */
+        #input-display {
+            position: absolute; top: 20px; left: 20px; font-size: 6rem;
+            color: #00fbff; font-weight: bold; text-shadow: 3px 3px 15px #000;
+            z-index: 50; font-family: 'Courier New', monospace;
         }
 
-        /* OSD & Nomor */
-        #num-in { position: absolute; top: 20px; left: 20px; font-size: 7rem; color: #00fbff; font-weight: bold; z-index: 100; }
+        /* OSD (On Screen Display) */
         #osd { 
-            position: absolute; bottom: 5%; left: 5%; background: rgba(0,0,0,0.8);
-            padding: 15px 40px; border-left: 10px solid #00fbff; opacity: 0; transition: 0.3s; z-index: 10;
+            position: absolute; bottom: 8%; left: 5%; 
+            background: rgba(0, 0, 0, 0.85); padding: 15px 40px; 
+            border-left: 12px solid #00fbff; opacity: 0; transition: 0.3s; z-index: 10;
         }
         #osd.active { opacity: 1; }
-        
-        /* Menu 0000 */
-        #menu-tv {
+        #osd h1 { font-size: 5rem; margin: 0; line-height: 1; }
+
+        /* Secret Menu 0000 */
+        #secret-menu {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; height: 70%; background: #111; border: 3px solid #00fbff;
-            display: none; flex-direction: column; z-index: 200;
+            width: 450px; background: #111; border: 4px solid #00fbff;
+            padding: 30px; display: none; z-index: 100; text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,1);
         }
-        #list { overflow-y: auto; flex: 1; padding: 10px; }
-        .item { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
-        .item.active { background: #00fbff; color: #000; font-weight: bold; }
     </style>
 </head>
-<body onclick="player.play()">
+<body onclick="initTV()">
 
     <div id="tv-screen">
-        <div id="loader">MENGHUBUNGKAN...</div>
-        <div id="num-in"></div>
-        <video id="player" playsinline autoplay></video>
+        <div id="input-display"></div>
 
-        <div id="osd">
-            <h1 id="ch-id">01</h1>
-            <div id="ch-name" style="font-size: 2rem; font-weight: bold;">MEMUAT...</div>
+        <div id="no-signal">
+            <div class="msg-box">
+                <h1>TIDAK ADA SINYAL</h1>
+                <p>MENCARI FREKUENSI DIGITAL...</p>
+            </div>
         </div>
 
-        <div id="menu-tv">
-            <div style="padding:10px; background:#00fbff; color:#000; text-align:center;">DAFTAR SALURAN (0101 UNTUK KELUAR)</div>
-            <div id="list"></div>
+        <video id="video-player" playsinline autoplay></video>
+
+        <div id="osd">
+            <h1 id="osd-num">01</h1>
+            <div id="osd-name" style="font-size: 2rem; font-weight: bold;">MEMUAT...</div>
+            <div style="font-size: 0.9rem; color: #00fbff; margin-top: 5px;">KUALITAS: AUTO | MODE: DIGITAL TV</div>
+        </div>
+
+        <div id="secret-menu">
+            <h2 style="color:#00fbff">PENGATURAN SISTEM</h2>
+            <hr style="margin:15px 0; border:1px solid #333">
+            <p>Saluran Tersedia: <span id="stat-count">...</span></p>
+            <p style="margin-top:10px">Status: <span style="color:green">Connected</span></p>
+            <p style="margin-top:20px; font-size:0.8rem; color:#888">Tekan PR/CH Atas/Bawah untuk Keluar</p>
         </div>
     </div>
 
     <script>
-        const player = document.getElementById('player');
+        const video = document.getElementById('video-player');
         const osd = document.getElementById('osd');
-        const loader = document.getElementById('loader');
-        const numIn = document.getElementById('num-in');
-        const menuTv = document.getElementById('menu-tv');
+        const noSignal = document.getElementById('no-signal');
+        const inputDisplay = document.getElementById('input-display');
+        const secretMenu = document.getElementById('secret-menu');
         
         let channels = [];
-        let cur = 0;
-        let buf = "";
+        let currentIndex = 0;
+        let numBuffer = "";
         let hls = new Hls();
 
-        // Ambil Data - Urutan 01 AKTV
-        fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://iptv-org.github.io/iptv/languages/ind.m3u"))
-            .then(r => r.text())
+        // MENGGUNAKAN PROXY UNTUK BYPASS BLANK HITAM (CORS)
+        const proxy = "https://api.allorigins.win/raw?url=";
+        const m3uUrl = "https://iptv-org.github.io/iptv/languages/ind.m3u";
+
+        fetch(proxy + encodeURIComponent(m3uUrl))
+            .then(res => res.text())
             .then(data => {
                 const lines = data.split('\n');
-                let id = 1;
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].startsWith('#EXTINF')) {
                         const name = lines[i].split(',')[1].trim();
                         const url = lines[i+1]?.trim();
-                        if(url) {
-                            channels.push({ id: id++, name, url });
-                            const div = document.createElement('div');
-                            div.className = 'item';
-                            div.id = `ch-${channels.length-1}`;
-                            div.innerHTML = `<span>${channels.length}. ${name}</span>`;
-                            document.getElementById('list').appendChild(div);
-                        }
+                        if(url) channels.push({ name, url });
                     }
                 }
-                play(0);
-            });
+                document.getElementById('stat-count').innerText = channels.length;
+                playChannel(0);
+            }).catch(() => { noSignal.style.display = 'flex'; });
 
-        function play(idx) {
-            if (idx < 0) idx = channels.length - 1;
-            if (idx >= channels.length) idx = 0;
-            cur = idx;
-            const ch = channels[idx];
-
-            // UI Instan
-            loader.style.display = 'block';
-            document.getElementById('ch-id').innerText = ch.id.toString().padStart(2, '0');
-            document.getElementById('ch-name').innerText = ch.name;
+        function playChannel(index) {
+            if (index < 0) index = channels.length - 1;
+            if (index >= channels.length) index = 0;
+            currentIndex = index;
+            
+            const ch = channels[index];
+            noSignal.style.display = 'none';
+            
+            // UI Update
+            document.getElementById('osd-num').innerText = (index + 1).toString().padStart(2, '0');
+            document.getElementById('osd-name').innerText = ch.name;
             osd.classList.add('active');
-            setTimeout(() => osd.classList.remove('active'), 3000);
+            clearTimeout(window.osdTimer);
+            window.osdTimer = setTimeout(() => osd.classList.remove('active'), 5000);
 
-            // Engine Play (Ultra Light)
+            // Engine Play
             if (Hls.isSupported()) {
                 hls.destroy();
-                hls = new Hls({ 
-                    manifestLoadingTimeOut: 5000, 
-                    fragLoadingTimeOut: 5000,
-                    enableWorker: true 
+                hls = new Hls({
+                    // Tuning khusus untuk Smart TV Low-End
+                    enableWorker: true,
+                    xhrSetup: function(xhr) { xhr.withCredentials = false; }
                 });
                 hls.loadSource(ch.url);
-                hls.attachMedia(player);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    player.play();
-                    loader.style.display = 'none';
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                
+                // Jika 15 detik gagal load, anggap No Signal
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) noSignal.style.display = 'flex';
                 });
-
-                // AUTO-RECONNECT JIKA BLANK
-                hls.on(Hls.Events.ERROR, (e, data) => {
-                    if (data.fatal) {
-                        console.log("Koneksi gagal, mencoba lagi...");
-                        setTimeout(() => play(cur), 3000); 
-                    }
-                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Untuk WebOS / Tizen yang mendukung native HLS
+                video.src = ch.url;
             }
         }
 
-        // Navigasi Remote
+        // --- MESIN NAVIGASI SEMUA JENIS REMOTE TV ---
         window.addEventListener('keydown', (e) => {
-            const k = e.key;
-            const c = e.keyCode;
+            const key = e.key;
+            const code = e.keyCode;
 
-            if (k === "ArrowUp" || c === 427 || c === 33) play(cur + 1);
-            if (k === "ArrowDown" || c === 428 || c === 34) play(cur - 1);
+            // List kode tombol PR/CH (Channel Up/Down) dari berbagai merk TV
+            const chUp = (key === "ChannelUp" || key === "ArrowUp" || code === 427 || code === 33 || code === 166);
+            const chDown = (key === "ChannelDown" || key === "ArrowDown" || code === 428 || code === 34 || code === 167);
 
-            if (/[0-9]/.test(k)) {
-                buf += k;
-                numIn.innerText = buf;
-                clearTimeout(window.t);
-                window.t = setTimeout(() => {
-                    if (buf === "0000") menuTv.style.display = 'flex';
-                    else if (buf === "0101") menuTv.style.display = 'none';
-                    else {
-                        const t = parseInt(buf) - 1;
-                        if (channels[t]) play(t);
+            if (chUp) {
+                if (secretMenu.style.display === 'block') secretMenu.style.display = 'none';
+                else playChannel(currentIndex + 1);
+            }
+            if (chDown) {
+                if (secretMenu.style.display === 'block') secretMenu.style.display = 'none';
+                else playChannel(currentIndex - 1);
+            }
+
+            // Shortcut Nomor 0000 & Angka
+            if (/[0-9]/.test(key)) {
+                numBuffer += key;
+                inputDisplay.innerText = numBuffer;
+                
+                clearTimeout(window.numTimer);
+                window.numTimer = setTimeout(() => {
+                    if (numBuffer === "0000") {
+                        secretMenu.style.display = 'block';
+                    } else {
+                        const target = parseInt(numBuffer) - 1;
+                        if (channels[target]) playChannel(target);
                     }
-                    buf = ""; numIn.innerText = "";
-                }, 1000);
+                    numBuffer = "";
+                    inputDisplay.innerText = "";
+                }, 1500);
             }
         });
+
+        function initTV() {
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+            video.play();
+        }
     </script>
 </body>
 </html>
