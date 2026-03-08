@@ -2,35 +2,33 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V27 - Bypass Scan</title>
+    <title>ZEII TV V28 - Anti Blank</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         * { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
         video { position: absolute; width: 100vw; height: 100vh; object-fit: fill; z-index: 1; }
+        #canvas-monitor { position: absolute; width: 1px; height: 1px; opacity: 0; } /* Detektor Pixel Hitam */
         #osd { position: absolute; bottom: 5%; left: 5%; width: 90%; background: rgba(0,0,0,0.9); padding: 20px; border-left: 10px solid #00fbff; z-index: 10; display: none; }
         #num-display { position: absolute; top: 5%; right: 5%; font-size: 8rem; color: #00fbff; font-weight: bold; z-index: 100; display: none; }
-        #scan-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .progress-bar { width: 60%; height: 15px; background: #222; border-radius: 10px; overflow: hidden; margin: 20px 0; border: 1px solid #00fbff; }
-        #scan-fill { width: 0%; height: 100%; background: #00fbff; transition: 0.1s; }
+        #error-msg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #00001a; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 30; }
     </style>
 </head>
 <body onclick="tv.play()">
     <video id="tv" playsinline autoplay></video>
+    <canvas id="canvas-monitor"></canvas>
     <div id="num-display"></div>
 
-    <div id="scan-overlay">
-        <h1 id="scan-status" style="color:#00fbff">DEEP SCANNING V27...</h1>
-        <div class="progress-bar"><div id="scan-fill"></div></div>
-        <p id="scan-info">Memverifikasi Sinyal...</p>
-        <p id="scan-found" style="color: yellow; margin-top: 10px;">Channel Stabil: 0</p>
+    <div id="osd">
+        <h2 id="ch-title">MENGHUBUNGKAN...</h2>
+        <div style="width:100%; height:8px; background:#222; margin-top:10px;"><div id="bar-fill" style="width:0%; height:100%; background:#00fbff;"></div></div>
+        <p id="status-txt" style="color:#00fbff; font-size:0.9rem; margin-top:5px;">REAL TIME CHECKING...</p>
     </div>
 
-    <div id="osd">
-        <h2 id="ch-title">MENCARI SINYAL...</h2>
-        <div style="width:100%; height:8px; background:#222; margin-top:10px;"><div id="bar-fill" style="width:0%; height:100%; background:#00fbff;"></div></div>
-        <p id="status-txt" style="color:#00fbff; font-size:0.9rem; margin-top:5px;">REAL SIGNAL: 0%</p>
+    <div id="error-msg">
+        <h1 style="color:red; font-size:3rem;">⚠️ SINYAL TERPUTUS</h1>
+        <p>Link sedang down atau diblokir. Coba channel lain.</p>
     </div>
 
     <script>
@@ -39,97 +37,72 @@
         const db = firebase.database();
         const tv = document.getElementById('tv');
         const osd = document.getElementById('osd');
-        const numDisp = document.getElementById('num-display');
+        const canvas = document.getElementById('canvas-monitor');
+        const ctx = canvas.getContext('2d');
         
-        let rawChannels = []; let hls = new Hls(); let numTimeout; let currentAV = "AVS1";
+        let hls = new Hls(); let blankCheckTimer;
 
-        db.ref("typing_now").on("value", (s) => {
-            const val = s.val();
-            if (val) {
-                numDisp.innerText = val; numDisp.style.display = 'block';
-                clearTimeout(numTimeout);
-                numTimeout = setTimeout(() => { numDisp.style.display = 'none'; db.ref("typing_now").set(null); }, 3000);
-                
-                if (val === "1062") startDeepScan();
-                if (val === "9999") restoreAll(); // Kode darurat restore
-                if (val === "0000") {
-                    db.ref("av_mode").once("value", (snap) => {
-                        db.ref("av_mode").set(snap.val() === "AVS2" ? "AVS1" : "AVS2");
-                    });
-                }
+        // Deteksi Layar Blank Hitam (Real-Time)
+        function checkBlackScreen() {
+            if (tv.paused || tv.ended) return;
+            ctx.drawImage(tv, 0, 0, 1, 1);
+            const pixel = ctx.getImageData(0, 0, 1, 1).data;
+            // Jika RGB mendekati 0,0,0 berarti blank hitam
+            if (pixel[0] < 5 && pixel[1] < 5 && pixel[2] < 5) {
+                return true;
             }
-        });
-
-        function restoreAll() {
-            db.ref("current_playlist").set(rawChannels);
-            alert("DAFTAR DIPULIHKAN 100%");
+            return false;
         }
-
-        async function startDeepScan() {
-            const overlay = document.getElementById('scan-overlay');
-            overlay.style.display = 'flex';
-            let validList = [];
-            let total = rawChannels.length;
-
-            for (let i = 0; i < total; i++) {
-                let p = Math.round((i / total) * 100);
-                document.getElementById('scan-fill').style.width = p + "%";
-                document.getElementById('scan-info').innerText = `Testing: ${rawChannels[i].name}`;
-
-                // Bypass Logic: Jangan hapus kalau server cuma lambat respon (Timeout naik ke 5s)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-                try {
-                    const res = await fetch(rawChannels[i].url, { method: 'GET', signal: controller.signal, headers: { 'Range': 'bytes=0-100' } });
-                    if (res.ok || res.status === 206) {
-                        validList.push(rawChannels[i]);
-                    }
-                } catch (e) {
-                    // Jika error karena CORS tapi link YouTube/M3U8 biasanya tetap valid, kita tetapkan simpan
-                    if (rawChannels[i].url.includes('m3u8') || rawChannels[i].name.includes('TRANS')) {
-                        validList.push(rawChannels[i]); 
-                    }
-                }
-                clearTimeout(timeoutId);
-                document.getElementById('scan-found').innerText = `Channel Stabil: ${validList.length}`;
-            }
-
-            db.ref("current_playlist").set(validList);
-            document.getElementById('scan-status').innerText = "SCAN SELESAI!";
-            setTimeout(() => { overlay.style.display = 'none'; }, 2000);
-        }
-
-        function loadM3U(url) {
-            fetch(url).then(r => r.text()).then(data => {
-                const lines = data.split('\n'); rawChannels = [];
-                for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].includes('#EXTINF')) rawChannels.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
-                }
-                db.ref("current_playlist").set(rawChannels);
-            });
-        }
-
-        db.ref("av_mode").on("value", (s) => {
-            currentAV = s.val() || "AVS1";
-            loadM3U(currentAV === "AVS2" ? "https://iptv-org.github.io/iptv/categories/kids.m3u" : "https://iptv-org.github.io/iptv/languages/ind.m3u");
-        });
 
         function play(idx) {
             db.ref("current_playlist").once("value", (snap) => {
                 const list = snap.val(); if (!list || !list[idx]) return;
-                osd.style.display = 'block';
-                document.getElementById('ch-title').innerText = list[idx].name;
-                if (hls) hls.destroy(); hls = new Hls();
-                hls.loadSource(list[idx].url); hls.attachMedia(tv);
+                const ch = list[idx];
                 
+                document.getElementById('error-msg').style.display = 'none';
+                osd.style.display = 'block';
+                document.getElementById('ch-title').innerText = ch.name;
+
+                if (hls) hls.destroy(); hls = new Hls({
+                    manifestLoadingTimeOut: 10000,
+                    levelLoadingTimeOut: 10000
+                });
+
+                hls.loadSource(ch.url);
+                hls.attachMedia(tv);
+
+                // Jika dalam 10 detik tetap blank, munculkan error
+                clearTimeout(blankCheckTimer);
+                blankCheckTimer = setTimeout(() => {
+                    if (checkBlackScreen()) {
+                        osd.style.display = 'none';
+                        document.getElementById('error-msg').style.display = 'flex';
+                        db.ref("live_signal").set(0);
+                    }
+                }, 10000);
+
                 tv.onplaying = () => {
                     db.ref("live_signal").set(100);
-                    setTimeout(() => { osd.style.display = 'none'; }, 1500);
+                    setTimeout(() => { osd.style.display = 'none'; }, 2000);
                 };
+                
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        osd.style.display = 'none';
+                        document.getElementById('error-msg').style.display = 'flex';
+                    }
+                });
             });
         }
+
         db.ref("current_channel").on("value", (s) => { if (s.val() !== null) play(s.val()); });
+        db.ref("typing_now").on("value", (s) => {
+            if(s.val()) {
+                const d = document.getElementById('num-display');
+                d.innerText = s.val(); d.style.display = 'block';
+                setTimeout(() => d.style.display = 'none', 3000);
+            }
+        });
     </script>
 </body>
 </html>
