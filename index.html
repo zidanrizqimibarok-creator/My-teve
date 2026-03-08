@@ -2,87 +2,91 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V30 - HYPER ENGINE</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>ZEII TV V31 - ANTI BLACK SCREEN</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
     <style>
-        * { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; color: white; }
-        video { position: absolute; width: 100vw; height: 100vh; object-fit: fill; z-index: 1; }
+        * { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
+        #video-container { width: 100vw; height: 100vh; background: #000; }
+        video { width: 100%; height: 100%; object-fit: fill; }
         
-        /* Menu Shortcut TV */
+        /* Menu TV */
         #menu-tv {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            width: 80%; max-width: 500px; height: 70vh; background: rgba(0, 10, 20, 0.95);
-            border: 3px solid #00fbff; border-radius: 20px; z-index: 500;
-            display: none; flex-direction: column; overflow: hidden;
-            box-shadow: 0 0 100px rgba(0, 251, 255, 0.5);
+            width: 80%; max-width: 450px; height: 60vh; background: rgba(0, 5, 20, 0.98);
+            border: 4px solid #00fbff; border-radius: 20px; z-index: 100;
+            display: none; flex-direction: column; box-shadow: 0 0 100px #00fbff55;
         }
-        .menu-header { padding: 20px; background: #00fbff; color: #000; font-weight: bold; text-align: center; font-size: 1.2rem; }
-        .ch-list { overflow-y: auto; flex: 1; padding: 10px; }
-        .ch-item { 
-            padding: 15px; border-bottom: 1px solid #1a1a1a; cursor: pointer;
-            display: flex; align-items: center; border-radius: 10px; margin-bottom: 5px;
-        }
-        .ch-item:hover { background: #00fbff; color: #000; }
-        .ch-num { font-weight: bold; margin-right: 15px; color: #00fbff; min-width: 30px; }
-        .ch-item:hover .ch-num { color: #000; }
+        .header { padding: 15px; background: #00fbff; color: #000; font-weight: 900; text-align: center; }
+        .list { overflow-y: auto; flex: 1; padding: 10px; }
+        .item { padding: 12px; border-bottom: 1px solid #111; cursor: pointer; display: flex; font-size: 1.1rem; }
+        .item:hover { background: #00fbff; color: #000; }
+        .num { width: 40px; color: #00fbff; font-weight: bold; }
+        .item:hover .num { color: #000; }
 
-        #num-display { 
-            position: absolute; top: 10%; right: 10%; font-size: 8rem; 
-            color: #00fbff; font-weight: bold; z-index: 1000; display: none; 
-            text-shadow: 0 0 20px #00fbff;
-        }
-
-        #osd { 
-            position: absolute; bottom: 5%; left: 5%; width: 90%; 
-            background: rgba(0,0,0,0.85); padding: 20px; border-left: 10px solid #00fbff; 
-            z-index: 10; display: none; border-radius: 0 15px 15px 0;
-        }
+        #num-pop { position: absolute; top: 10%; right: 10%; font-size: 8rem; color: #00fbff; font-weight: bold; z-index: 200; display: none; text-shadow: 0 0 20px #00fbff; }
+        #osd { position: absolute; bottom: 5%; left: 5%; width: 90%; background: rgba(0,0,0,0.8); padding: 15px; border-left: 10px solid #00fbff; display: none; z-index: 50; }
     </style>
 </head>
-<body>
-    <video id="tv" playsinline autoplay></video>
-    <div id="num-display"></div>
+<body onload="initApp()">
+    <div id="video-container">
+        <video id="tv" autoplay playsinline></video>
+    </div>
+
+    <div id="num-pop"></div>
 
     <div id="menu-tv">
-        <div class="menu-header">SELECT CHANNEL (CODE: 1111)</div>
-        <div class="ch-list" id="list-container"></div>
+        <div class="header">DAFTAR SALURAN (Ketik: 1111)</div>
+        <div class="list" id="ch-list"></div>
     </div>
 
     <div id="osd">
-        <h2 id="ch-title">CONNECTING...</h2>
-        <div style="width:100%; height:10px; background:#222; margin-top:10px; border-radius:5px; overflow:hidden;">
-            <div id="bar" style="width:0%; height:100%; background:#00fbff; transition:0.5s;"></div>
-        </div>
-        <p style="color:#00fbff; font-size:0.8rem; margin-top:5px; font-weight:bold;">BYPASS ENGINE V30 ACTIVE</p>
+        <h2 id="ch-name">MENGHUBUNGKAN...</h2>
+        <p style="color:#00fbff; font-size: 0.8rem;">ENGINE V31 - BYPASS ACTIVE</p>
     </div>
 
     <script>
-        const tv = document.getElementById('tv');
-        const menu = document.getElementById('menu-tv');
-        const listContainer = document.getElementById('list-container');
-        const numDisp = document.getElementById('num-display');
-        const osd = document.getElementById('osd');
-        const bar = document.getElementById('bar');
-        
         let channels = [];
-        let hls = null;
-        let inputCode = "";
-        let inputTimeout;
-        let currentAV = "AVS1";
+        let player;
+        let video;
+        let inputStr = "";
+        let inputTimer;
+        let mode = "AVS1";
 
-        // Proxy untuk bypass blokir (CORS)
-        const proxy = "https://api.allorigins.win/raw?url=";
+        async function initApp() {
+            video = document.getElementById('tv');
+            player = new shaka.Player(video);
 
-        function fetchPlaylist() {
-            const baseUrl = (currentAV === "AVS2") ? "https://iptv-org.github.io/iptv/categories/kids.m3u" : "https://iptv-org.github.io/iptv/languages/ind.m3u";
-            
-            listContainer.innerHTML = "<div style='text-align:center;padding:20px;'>Syncing Satellite...</div>";
-            
-            fetch(baseUrl).then(r => r.text()).then(data => {
-                const lines = data.split('\n');
+            // Pengaturan agar TV tidak memblokir video
+            player.configure({
+                streaming: {
+                    lowLatencyMode: true,
+                    jumpLargeGaps: true
+                }
+            });
+
+            // Error listener
+            player.addEventListener('error', (e) => {
+                console.error('Error Code:', e.detail.code);
+                // Jika gagal, coba gunakan proxy
+                if (e.detail.code === 1001 || e.detail.code === 3016) {
+                    console.log("Retrying with Proxy Bypass...");
+                }
+            });
+
+            fetchData();
+        }
+
+        function fetchData() {
+            const url = (mode === "AVS2") ? "https://iptv-org.github.io/iptv/categories/kids.m3u" : "https://iptv-org.github.io/iptv/languages/ind.m3u";
+            const listContainer = document.getElementById('ch-list');
+            listContainer.innerHTML = "<div style='padding:20px;text-align:center;'>Mencari Sinyal...</div>";
+
+            fetch(url).then(r => r.text()).then(data => {
                 channels = [];
                 listContainer.innerHTML = "";
+                const lines = data.split('\n');
                 let count = 0;
+
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].includes('#EXTINF')) {
                         let name = lines[i].split(',')[1].trim();
@@ -90,85 +94,67 @@
                         channels.push({ name, link });
                         
                         let div = document.createElement('div');
-                        div.className = "ch-item";
-                        div.innerHTML = `<span class="ch-num">${count + 1}</span> <span>${name}</span>`;
-                        let idx = count;
-                        div.onclick = () => playChannel(idx);
+                        div.className = "item";
+                        div.innerHTML = `<span class="num">${count + 1}</span> <span>${name}</span>`;
+                        let currentIdx = count;
+                        div.onclick = () => playCh(currentIdx);
                         listContainer.appendChild(div);
                         count++;
                     }
                 }
-            }).catch(() => {
-                listContainer.innerHTML = "<div style='color:red;padding:20px;'>Connection Failed. Check Internet.</div>";
             });
         }
 
-        function playChannel(idx) {
+        async function playCh(idx) {
             const ch = channels[idx];
-            if(!ch) return;
-            
-            menu.style.display = 'none';
-            osd.style.display = 'block';
-            document.getElementById('ch-title').innerText = ch.name;
-            bar.style.width = "30%";
+            if (!ch) return;
 
-            if (hls) hls.destroy();
-            hls = new Hls({
-                enableWorker: true,
-                lowLatencyMode: true,
-                backBufferLength: 90
-            });
+            document.getElementById('menu-tv').style.display = 'none';
+            document.getElementById('osd').style.display = 'block';
+            document.getElementById('ch-name').innerText = ch.name;
 
-            // Coba putar langsung, jika gagal HLS akan menghandle
-            hls.loadSource(ch.link);
-            hls.attachMedia(tv);
-            
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                bar.style.width = "100%";
-                tv.play();
-            });
+            try {
+                // Gunakan Proxy AllOrigins untuk membongkar blokir TV
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(ch.link)}`;
+                await player.load(proxyUrl);
+                video.play();
+            } catch (e) {
+                // Jika proxy gagal, coba link original
+                try { await player.load(ch.link); video.play(); } catch(err) { console.log("Total Dead Link"); }
+            }
 
-            hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) {
-                    console.log("Retrying with Proxy...");
-                    // Jika gagal total, coba lewat proxy
-                    hls.loadSource(proxy + encodeURIComponent(ch.link));
-                }
-            });
-
-            tv.onplaying = () => {
-                setTimeout(() => { osd.style.display = 'none'; bar.style.width = "0%"; }, 2000);
-            };
+            setTimeout(() => { document.getElementById('osd').style.display = 'none'; }, 3000);
         }
 
+        // Kontrol Remote Fisik TV / Keyboard
         window.addEventListener('keydown', (e) => {
             if (e.key >= '0' && e.key <= '9') {
-                inputCode += e.key;
-                numDisp.innerText = inputCode;
-                numDisp.style.display = 'block';
-                
+                inputStr += e.key;
+                const pop = document.getElementById('num-pop');
+                pop.innerText = inputStr;
+                pop.style.display = 'block';
+
                 clearTimeout(inputTimeout);
                 inputTimeout = setTimeout(() => {
-                    processCode(inputCode);
-                    inputCode = "";
-                    numDisp.style.display = 'none';
+                    handleCode(inputStr);
+                    inputStr = "";
+                    pop.style.display = 'none';
                 }, 2000);
             }
         });
 
-        function processCode(code) {
+        function handleCode(code) {
             if (code === "1111") {
-                menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
+                const m = document.getElementById('menu-tv');
+                m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
             } else if (code === "0000") {
-                currentAV = (currentAV === "AVS1") ? "AVS2" : "AVS1";
-                fetchPlaylist();
+                mode = (mode === "AVS1") ? "AVS2" : "AVS1";
+                fetchData();
             } else {
-                let idx = parseInt(code) - 1;
-                if (channels[idx]) playChannel(idx);
+                let i = parseInt(code) - 1;
+                if (channels[i]) playCh(i);
             }
         }
-
-        fetchPlaylist();
     </script>
 </body>
 </html>
