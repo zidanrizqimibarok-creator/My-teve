@@ -2,27 +2,26 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>CONECTA OS V80</title>
+    <title>CONECTA OS V81</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
     <style>
         * { margin:0; padding:0; overflow:hidden; background:transparent; cursor: none; color: #00ff88; }
         body { font-family: 'Segoe UI', sans-serif; background: #000; }
 
-        /* VIDEO FULL SCREEN PAKSA */
+        /* VIDEO FULL SCREEN COVER */
         #v { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 1; }
 
-        /* LOGO HD GERAK */
+        /* LOGO HD */
         #logo-conecta { position: absolute; top: 30px; right: 40px; z-index: 500; text-align: right; animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; text-shadow: 0 0 20px #ffcc00; } }
         .hd-tag { font-size: 12px; background: #ffcc00; color: #000; padding: 2px 6px; font-weight: bold; border-radius: 3px; }
         .con-text { font-size: 2.2rem; font-weight: 900; color: #ffcc00; border-bottom: 4px solid #00ff88; display: block; }
 
-        /* HOME SCREEN & SETTINGS (TRANSPARAN LATAR BELAKANG TV) */
+        /* HOME & SETTINGS (TRANSPARAN) */
         #home, #settings-ui { 
-            position: fixed; inset: 0; 
-            background: rgba(0,0,0,0.8); /* Latar transparan supaya TV kelihatan */
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
             z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
         }
 
         .menu-row { display: flex; gap: 30px; }
@@ -33,22 +32,34 @@
         }
         .card.active { border-color: #00ff88; background: rgba(0,255,136,0.3); transform: scale(1.1); }
 
-        /* SCAN ANALYZER DI SETTINGS */
-        #scan-list { margin-top: 20px; width: 80%; text-align: left; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px; border: 1px solid #333; }
-        .ch-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #222; font-size: 14px; }
+        /* SCAN LIST */
+        #scan-list { margin-top: 20px; width: 80%; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px; border: 1px solid #333; }
+        .ch-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; }
         .status-on { color: #00ff88; font-weight: bold; }
         .status-off { color: #ff4444; font-weight: bold; }
 
-        /* UI LAIN */
-        #browser-ui { position: fixed; inset: 0; z-index: 1100; display: none; background: #fff; }
-        #info { position:absolute; bottom:50px; left:50px; padding:30px; background: rgba(0,20,10,0.9); z-index:99; width:600px; display:none; border-left: 10px solid #00ff88; }
-        #loading-bar { width: 0%; height: 8px; background: #ffcc00; transition: width 0.3s; margin-top: 15px; }
+        /* INFO BOX */
+        #info { position:absolute; bottom:50px; left:50px; padding:30px; background: rgba(0,25,10,0.95); z-index:99; width:600px; display:none; border-left: 10px solid #00ff88; }
+        #loading-bar-container { width: 100%; height: 8px; background: #111; margin-top: 15px; border-radius: 4px; overflow: hidden; }
+        #loading-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #ffcc00, #00ff88); transition: width 0.3s; }
+
+        /* NO SIGNAL OVERLAY */
+        #alert-center { 
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); 
+            font-size:3.5rem; color:#ff4444; border:6px solid #ff4444; padding:40px; 
+            display:none; z-index:110; background:#000; text-align:center; font-weight: bold;
+            box-shadow: 0 0 50px rgba(255,0,0,0.5);
+        }
+        
         #num { position: absolute; top: 40px; left: 40px; font-size: 100px; color: rgba(0,255,136,0.2); font-weight: 900; z-index: 100; }
+        #browser-ui { position: fixed; inset: 0; z-index: 1100; display: none; background: #fff; }
     </style>
 </head>
 <body onclick="startOS()">
 
     <video id="v" autoplay playsinline></video>
+
+    <div id="alert-center">SINYAL TERACAK<br><small style="font-size: 1.5rem; color: #fff;">SILAHKAN HUBUNGI TEKNISI</small></div>
 
     <div id="home">
         <h1 style="color: #ffcc00; font-size: 3rem; margin-bottom: 30px;">CONECTA OS</h1>
@@ -62,8 +73,8 @@
     <div id="settings-ui">
         <h1 style="color:#ffcc00">SYSTEM SETTINGS</h1>
         <div id="scan-list">
-            <h3 style="border-bottom: 2px solid #00ff88; padding-bottom: 10px;">CHANNEL ANALYZER (UJI COBA)</h3>
-            <div id="list-content">Scanning signals...</div>
+            <h3 style="border-bottom: 2px solid #00ff88; padding-bottom: 10px;">CHANNEL ANALYZER</h3>
+            <div id="list-content">Scanning...</div>
         </div>
         <p style="margin-top:20px;">TEKAN [0] UNTUK KEMBALI</p>
     </div>
@@ -78,13 +89,17 @@
     <div id="info">
         <h1 id="n"></h1>
         <p id="m-txt" style="color:#ffcc00"></p>
-        <div id="loading-bar"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px;">
+            <span>STATUS: <span id="status-text">BUFFERING</span></span>
+            <span id="load-pc">0%</span>
+        </div>
+        <div id="loading-bar-container"><div id="loading-bar"></div></div>
     </div>
 
     <script>
         const v = document.getElementById('v');
         const h = new Hls();
-        let ch = [], cur = 0, b = "", mode = "AVS1", menuIdx = 0, currentApp = 'home';
+        let ch = [], cur = 0, b = "", mode = "AVS1", menuIdx = 0, currentApp = 'home', signalTimer;
 
         function startOS() { openApp('home'); load(); }
 
@@ -98,38 +113,61 @@
 
         function runAnalyzer() {
             const content = document.getElementById('list-content');
-            content.innerHTML = "Memeriksa 5 Channel Terbaru...";
             let html = "";
-            // Simulasi Uji Coba 5 Channel
             for(let i=0; i<5; i++) {
                 if(ch[i]) {
                     let status = (Math.random() > 0.3) ? "ACTIVE" : "OFFLINE";
-                    let color = (status === "ACTIVE") ? "status-on" : "status-off";
-                    html += `<div class="ch-item"><span>${ch[i].name}</span><span class="${color}">${status}</span></div>`;
+                    html += `<div class="ch-item"><span>${ch[i].name}</span><span class="${status === 'ACTIVE' ? 'status-on' : 'status-off'}">${status}</span></div>`;
                 }
             }
-            setTimeout(() => { content.innerHTML = html; }, 1000);
+            content.innerHTML = html;
         }
 
         function play(i) {
             if (ch.length === 0) return;
             cur = (i < 0) ? ch.length - 1 : (i >= ch.length) ? 0 : i;
-            h.loadSource(ch[cur].url); h.attachMedia(v);
-            showInfo();
-        }
-
-        function showInfo() {
+            
+            // Reset UI
+            document.getElementById('alert-center').style.display = 'none';
             document.getElementById('info').style.display = 'block';
-            document.getElementById('n').innerText = (cur+1) + ". " + ch[cur].name;
-            document.getElementById('m-txt').innerText = "CONECTA HD ENGINE";
             document.getElementById('loading-bar').style.width = "0%";
-            setTimeout(() => { document.getElementById('loading-bar').style.width = "100%"; }, 100);
-            setTimeout(() => { document.getElementById('info').style.display = 'none'; }, 3000);
+            document.getElementById('load-pc').innerText = "0%";
+            document.getElementById('status-text').innerText = "BUFFERING";
+
+            // HLS Load
+            h.loadSource(ch[cur].url); h.attachMedia(v);
+
+            // Start Real Timeout 10 Detik
+            clearTimeout(signalTimer);
+            signalTimer = setTimeout(() => {
+                if (v.paused || v.readyState < 3) { // Jika setelah 10s video belum siap (ReadyState < 3)
+                    h.stopLoad();
+                    document.getElementById('alert-center').style.display = 'block';
+                    document.getElementById('info').style.display = 'none';
+                }
+            }, 10000); 
+
+            document.getElementById('n').innerText = (cur+1) + ". " + ch[cur].name;
+            document.getElementById('m-txt').innerText = "CONECTA HD LINK";
         }
 
+        // Event saat video beneran loading (Real Buffer)
+        v.onwaiting = () => { 
+            document.getElementById('status-text').innerText = "RECONNECTING..."; 
+            document.getElementById('info').style.display = 'block';
+        };
+
+        v.onplaying = () => { 
+            clearTimeout(signalTimer);
+            document.getElementById('status-text').innerText = "CONNECTED";
+            document.getElementById('loading-bar').style.width = "100%";
+            document.getElementById('load-pc').innerText = "100%";
+            setTimeout(() => { document.getElementById('info').style.display = 'none'; }, 2000);
+        };
+
+        // KEYDOWN ASLI
         window.addEventListener('keydown', (e) => {
-            const c = e.keyCode;
-            const key = e.key;
+            const c = e.keyCode; const key = e.key;
 
             if (currentApp === 'browser' && key === "1") { openApp('home'); return; }
             if (currentApp === 'settings' && key === "0") { openApp('home'); return; }
@@ -140,8 +178,7 @@
             }
 
             if (/[0-9]/.test(key)) {
-                b += key;
-                document.getElementById('num').innerText = b;
+                b += key; document.getElementById('num').innerText = b;
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
                     if (currentApp === 'home' && b.length === 1) {
