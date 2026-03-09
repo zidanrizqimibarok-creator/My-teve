@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII-TV STUDIO 2 (TV) - V66</title>
+    <title>ZEII-TV STUDIO 2 (TV) - V67 HARD LOCK</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -10,51 +10,35 @@
         * { margin:0; padding:0; overflow:hidden; background:#000; cursor: none; }
         body { font-family: 'Courier New', monospace; color:#00ff88; }
         
-        /* Efek Tabung Emerald */
         body::before { 
             content:" "; display:block; position:absolute; inset:0; 
-            background: linear-gradient(rgba(0, 50, 0, 0) 50%, rgba(0, 20, 0, 0.2) 50%),
-                        radial-gradient(circle, transparent 60%, rgba(0,0,0,0.4) 100%);
-            z-index:20; background-size: 100% 3px, 100% 100%; pointer-events:none; 
+            background: linear-gradient(rgba(0, 50, 0, 0) 50%, rgba(0, 20, 0, 0.2) 50%);
+            z-index:20; background-size: 100% 3px; pointer-events:none; 
         }
 
         #noise { position:absolute; inset:0; background:url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity:0; z-index:5; pointer-events:none; mix-blend-mode: screen; filter: hue-rotate(90deg); }
-        .analog-v { filter: contrast(1.2) sepia(0.2) hue-rotate(50deg); animation: flicker 0.1s infinite; }
-        @keyframes flicker { 0% { opacity: 0.97; } 100% { opacity: 1; } }
+        .analog-v { filter: contrast(1.2) hue-rotate(50deg); animation: flicker 0.1s infinite; }
+        @keyframes flicker { 0% { opacity: 0.95; } 100% { opacity: 1; } }
         
         video { width:100vw; height:100vh; object-fit:contain; }
-        #ews { position:absolute; top:0; left:0; width:100%; background:#00ff88; color:#000; padding:12px; z-index:1000; display:none; font-weight:bold; }
-        #num { position:absolute; top:40px; right:60px; font-size:120px; font-weight:bold; z-index:99; color: #00ff88; text-shadow: 4px 4px #004422; }
+        #num { position:absolute; top:40px; right:60px; font-size:120px; font-weight:bold; z-index:99; color: #00ff88; text-shadow: 4px 4px #000; }
         
-        #info { 
-            position:absolute; bottom:50px; left:50px; padding:25px; 
-            border: 2px solid #00ff88; background: rgba(0, 15, 5, 0.9); 
-            z-index:99; width:580px; display:none; 
-        }
-
-        #alert-center { 
-            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); 
-            font-size:3.5rem; color:#00ff88; border:5px solid #00ff88; padding:30px; 
-            display:none; z-index:100; background:#000; font-weight:bold; text-align: center;
-        }
-
-        #bar { width:0%; height:6px; background:#00ff88; margin-top:10px; transition: width 1s linear; box-shadow: 0 0 10px #00ff88; }
-        .marquee { display: block; width: 100%; white-space: nowrap; overflow: hidden; }
-        .marquee span { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; }
-        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+        #info { position:absolute; bottom:50px; left:50px; padding:25px; border: 2px solid #00ff88; background: rgba(0, 15, 5, 0.9); z-index:99; width:580px; display:none; }
+        #alert-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3rem; color:#00ff88; border:4px solid #00ff88; padding:30px; display:none; z-index:100; background:#000; font-weight:bold; text-align: center; line-height: 1; }
+        
+        #bar { width:0%; height:6px; background:#00ff88; margin-top:10px; transition: width 1s linear; }
     </style>
 </head>
 <body onclick="v.play(); document.documentElement.requestFullscreen();">
     <div id="noise"></div>
-    <div id="ews" class="marquee"><span id="ews-text">BMKG SYSTEM ACTIVE...</span></div>
     <div id="num"></div>
-    <div id="alert-center">NO SIGNAL<br><small style="font-size: 1rem;">MENCARI FREKUENSI...</small></div>
+    <div id="alert-center">NO SIGNAL<br><span style="font-size: 1.2rem; color: red;">HARD LOCKED BY SYSTEM</span></div>
     
     <div id="info">
         <h1 id="n" style="font-size:2.5rem;"></h1>
         <p id="m-txt" style="color:#fff; font-size: 14px;"></p>
         <div style="background:#002211; height:6px; margin-top:15px;"><div id="bar"></div></div>
-        <p id="btxt" style="font-size:12px; margin-top:5px;">TUNING...</p>
+        <p id="btxt" style="font-size:12px; margin-top:5px;">SYNCHRONIZING...</p>
     </div>
 
     <video id="v" autoplay playsinline></video>
@@ -63,9 +47,9 @@
         const firebaseConfig = { databaseURL: "https://xbook-global26-default-rtdb.asia-southeast1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig); const db = firebase.database();
         const v = document.getElementById('v'); const h = new Hls();
-        let ch = [], cur = 0, b = "", timerSig, count = 10, analogOff = false;
+        let ch = [], cur = 0, b = "", timerSig, count = 10, analogKill = false;
 
-        // --- KEYDOWN REMOT TV ASLI ---
+        // --- KEYDOWN REMOT TV ---
         window.addEventListener('keydown', (e) => {
             const c = e.keyCode;
             if (c == 33 || c == 427 || e.key == "ArrowUp") play(cur + 1);
@@ -75,8 +59,7 @@
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
                     if (b === "82") { localStorage.clear(); location.reload(); }
-                    else if (b === "999") { analogOff = !analogOff; play(cur); }
-                    else if (b === "555") checkBMKG();
+                    else if (b === "999") { analogKill = !analogKill; play(cur); }
                     else { let t = parseInt(b)-1; if(ch[t]) play(t); }
                     b = ""; document.getElementById('num').innerText = "";
                 }, 800);
@@ -88,42 +71,62 @@
             const d = s.val(); if(!d) return;
             if(d.code === 'UP') play(cur+1);
             else if(d.code === 'DOWN') play(cur-1);
-            else if(d.code === '999') { analogOff = !analogOff; play(cur); }
+            else if(d.code === '999') { analogKill = !analogKill; play(cur); }
             else if(d.code === '82') { localStorage.clear(); location.reload(); }
-            else if(d.code === '555') checkBMKG();
             else { let n = parseInt(d.code)-1; if(ch[n]) play(n); }
         });
 
         function play(i) {
             if (i < 0) i = ch.length - 1; if (i >= ch.length) i = 0;
             cur = i;
-            const isA = (Math.random() > 0.7) && !analogOff;
             
+            // Channel ini Analog atau Digital? (Simulasi statis per channel)
+            const isChAnalog = (i % 3 === 0); 
+            
+            // JIKA ANALOG KILL AKTIF DAN CHANNEL INI ANALOG -> FORCE NO SIGNAL
+            const forceNoSignal = (analogKill && isChAnalog);
+
             document.getElementById('n').innerText = (i+1) + ". " + ch[i].name;
-            document.getElementById('m-txt').innerText = isA ? "TYPE: ANALOG WAVE" : "TYPE: DIGITAL DTV";
+            document.getElementById('m-txt').innerText = isChAnalog ? "TYPE: ANALOG WAVE" : "TYPE: DIGITAL DTV";
             document.getElementById('info').style.display = 'block';
             document.getElementById('alert-center').style.display = 'none';
-            document.getElementById('noise').style.opacity = isA ? "0.4" : "0";
-            v.className = isA ? "analog-v" : "";
             v.style.opacity = "0";
+
+            // Efek Visual Analog (Hanya Muncul Jika analogKill = OFF)
+            if (isChAnalog && !analogKill) {
+                document.getElementById('noise').style.opacity = "0.4";
+                v.className = "analog-v";
+            } else {
+                document.getElementById('noise').style.opacity = "0";
+                v.className = "";
+            }
 
             clearInterval(timerSig); count = 10;
             document.getElementById('bar').style.width = "0%";
-            h.loadSource(ch[i].url); h.attachMedia(v);
 
-            timerSig = setInterval(() => {
-                count--;
-                document.getElementById('bar').style.width = ((10-count)*10) + "%";
-                document.getElementById('btxt').innerText = "SYNCHRONIZING: " + count + "s";
-                if(count <= 0) {
-                    clearInterval(timerSig);
-                    if(v.paused || v.readyState < 3) {
-                        document.getElementById('alert-center').style.display = 'block';
+            if (forceNoSignal) {
+                // Langsung No Signal tanpa nunggu 10 detik
+                setTimeout(() => {
+                    document.getElementById('alert-center').style.display = 'block';
+                    document.getElementById('btxt').innerText = "ANALOG SYSTEM KILLED";
+                    h.stopLoad(); v.pause();
+                }, 500);
+            } else {
+                h.loadSource(ch[i].url); h.attachMedia(v);
+                timerSig = setInterval(() => {
+                    count--;
+                    document.getElementById('bar').style.width = ((10-count)*10) + "%";
+                    document.getElementById('btxt').innerText = "SYNCHRONIZING: " + count + "s";
+                    if(count <= 0) {
+                        clearInterval(timerSig);
+                        if(v.paused || v.readyState < 3) {
+                            document.getElementById('alert-center').style.display = 'block';
+                        }
                     }
-                }
-            }, 1000);
+                }, 1000);
+            }
 
-            db.ref('tv_control/current').set({ name: ch[i].name, id: i+1 });
+            db.ref('tv_control/current').set({ name: ch[i].name, id: i+1, analog: !analogKill });
         }
 
         v.onplaying = () => {
@@ -134,24 +137,13 @@
             setTimeout(() => { document.getElementById('info').style.display = 'none'; }, 3000);
         };
 
-        async function checkBMKG() {
-            try {
-                const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
-                const gempa = await fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json').then(r => r.json());
-                const d = gempa.Infogempa.gempa;
-                document.getElementById('ews').style.display = "block";
-                document.getElementById('ews-text').innerText = `[BMKG] WILAYAH: ${geo.city.toUpperCase()} | GEMPA: ${d.Magnitude} SR | ${d.Wilayah} | ${d.Potensi}`;
-                setTimeout(()=> document.getElementById('ews').style.display="none", 20000);
-            } catch (e) {}
-        }
-
         function load() {
             fetch("https://iptv-org.github.io/iptv/languages/ind.m3u").then(r => r.text()).then(d => {
                 const lines = d.split('\n');
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].includes('#EXTINF')) ch.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
                 }
-                play(0); checkBMKG();
+                play(0);
             });
         }
         load();
