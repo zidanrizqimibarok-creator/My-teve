@@ -2,98 +2,69 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>CONECTA OS V78 - ULTIMATE</title>
+    <title>CONECTA OS V79</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
     <style>
         * { margin:0; padding:0; overflow:hidden; background:#000; cursor: none; color: #00ff88; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { font-family: 'Segoe UI', sans-serif; }
 
-        /* LOGO CONECTA HD GERAK */
-        #logo-conecta { 
-            position: absolute; top: 30px; right: 40px; z-index: 500; 
-            text-align: right; animation: pulseLogo 2s infinite ease-in-out;
-        }
-        @keyframes pulseLogo {
-            0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.05); opacity: 1; text-shadow: 0 0 20px #ffcc00; }
-            100% { transform: scale(1); opacity: 0.8; }
-        }
-        .hd-tag { font-size: 12px; background: #ffcc00; color: #000; padding: 1px 5px; font-weight: bold; border-radius: 3px; display: inline-block; }
-        .con-text { font-size: 2rem; font-weight: 900; color: #ffcc00; border-bottom: 3px solid #00ff88; display: block; line-height: 1.1; }
+        /* LOGO ANIMASI */
+        #logo-conecta { position: absolute; top: 30px; right: 40px; z-index: 500; text-align: right; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; text-shadow: 0 0 20px #ffcc00; } }
+        .hd-tag { font-size: 12px; background: #ffcc00; color: #000; padding: 1px 5px; font-weight: bold; border-radius: 3px; }
+        .con-text { font-size: 2rem; font-weight: 900; color: #ffcc00; border-bottom: 3px solid #00ff88; display: block; }
 
-        /* HOME SCREEN (MODERN UI) */
-        #home { 
-            position: fixed; inset: 0; 
-            background: radial-gradient(circle, #0a1a0a 0%, #000 100%); 
-            z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .menu-container { display: flex; gap: 50px; margin-top: 30px; }
+        /* HOME SCREEN */
+        #home { position: fixed; inset: 0; background: radial-gradient(circle, #0a1a0a, #000); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .menu-row { display: flex; gap: 40px; margin-top: 30px; }
         .card { 
-            width: 200px; height: 250px; border: 4px solid #333; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            border-radius: 25px; transition: 0.4s; background: rgba(255,255,255,0.05);
+            width: 220px; height: 180px; border: 4px solid #333; border-radius: 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05); transition: 0.3s;
         }
-        .card:hover { border-color: #00ff88; background: rgba(0,255,136,0.1); transform: translateY(-15px); box-shadow: 0 0 30px #00ff88; }
-        .card h2 { color: #fff; margin-top: 15px; font-size: 1.2rem; }
-        .card .icon { font-size: 4rem; }
+        .card.active { border-color: #00ff88; background: rgba(0,255,136,0.2); transform: scale(1.1); box-shadow: 0 0 30px #00ff88; }
+        .card i { font-size: 3rem; margin-bottom: 10px; font-style: normal; }
 
-        /* BROWSER & SETTINGS UI */
+        /* UI LAIN */
         #browser-ui, #settings-ui { position: fixed; inset: 0; z-index: 1100; display: none; background: #fff; }
-        #settings-ui { background: #0a0a0a; padding: 60px; color: #fff; }
-
-        /* TV ELEMENTS */
-        video { width:100vw; height:100vh; object-fit:contain; background: #000; }
-        #info { 
-            position:absolute; bottom:50px; left:50px; padding:35px; 
-            background: linear-gradient(to right, rgba(0,30,15,0.95), rgba(0,0,0,0.8)); 
-            z-index:99; width:650px; display:none; border-left: 12px solid #00ff88; 
-        }
-        #loading-wrap { width: 100%; height: 10px; background: #222; margin-top: 20px; border-radius: 5px; overflow: hidden; }
-        #loading-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #ffcc00, #00ff88); transition: width 0.3s; }
-        
-        #num { position: absolute; top: 120px; left: 50px; font-size: 100px; color: rgba(0,255,136,0.2); font-weight: 900; z-index: 100; }
-        #alert-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3.5rem; color:#ff4444; border:6px solid #ff4444; padding:40px; display:none; z-index:110; background:#000; text-align:center; font-weight: bold; }
-        
+        #settings-ui { background: #0a0a0a; padding: 50px; }
         #scan-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: #000; border: 4px solid #ffcc00; padding: 40px; z-index: 2000; display: none; text-align: center; }
+
+        /* TV */
+        video { width:100vw; height:100vh; object-fit:contain; }
+        #info { position:absolute; bottom:50px; left:50px; padding:30px; background: rgba(0,20,10,0.95); z-index:99; width:650px; display:none; border-left: 10px solid #00ff88; }
+        #loading-bar { width: 0%; height: 8px; background: linear-gradient(90deg, #ffcc00, #00ff88); transition: width 0.3s; margin-top: 15px; }
+        #num { position: absolute; top: 40px; left: 40px; font-size: 100px; color: rgba(0,255,136,0.2); font-weight: 900; z-index: 100; }
+        #alert-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3rem; color:#ff4444; border:5px solid #ff4444; padding:30px; display:none; z-index:110; background:#000; text-align:center; }
     </style>
 </head>
 <body onclick="startOS()">
 
     <div id="home">
-        <h1 style="font-size: 4rem; color: #ffcc00; letter-spacing: 10px; text-shadow: 0 0 20px #ffcc00;">CONECTA OS</h1>
-        <p style="color: #888; margin-bottom: 20px;">PILIH MENU DENGAN KLIK ATAU SHORTCUT</p>
-        <div class="menu-container">
-            <div class="card" onclick="openApp('tv')"><span class="icon">📺</span><h2>TV HD</h2></div>
-            <div class="card" onclick="openApp('browser')"><span class="icon">🌐</span><h2>BROWSER</h2></div>
-            <div class="card" onclick="openApp('settings')"><span class="icon">⚙️</span><h2>SETTINGS</h2></div>
+        <h1 style="color: #ffcc00; letter-spacing: 10px; font-size: 3rem;">CONECTA OS</h1>
+        <div class="menu-row">
+            <div class="card active" id="m0"><i>📺</i><h2>TV MODE</h2></div>
+            <div class="card" id="m1"><i>🌐</i><h2>BROWSER</h2></div>
+            <div class="card" id="m2"><i>⚙️</i><h2>SETTINGS</h2></div>
         </div>
-        <p style="margin-top: 50px; color: #00ff88;">Tekan [H] untuk balik ke Home kapan saja</p>
+        <p style="margin-top: 40px; color: #555;">Gunakan PR+/PR- untuk geser, Angka untuk pilih</p>
     </div>
 
     <div id="browser-ui">
-        <div style="background: #333; padding: 10px; color: #fff; display: flex; justify-content: space-between;">
-            <span>CONECTA BROWSER - GOOGLE</span>
-            <span>Tekan [1] Untuk Keluar</span>
-        </div>
-        <iframe src="https://www.google.com/search?igu=1" style="width:100%; height:calc(100vh - 40px); border:none;"></iframe>
+        <iframe src="https://www.google.com/search?igu=1" style="width:100%; height:100vh; border:none;"></iframe>
     </div>
 
     <div id="settings-ui">
-        <h1 style="color: #ffcc00; font-size: 3rem;">SETTINGS</h1><hr><br>
-        <div style="font-size: 1.5rem; line-height: 2;">
-            <p>● RESOLUSI: 1080p SUPER HD</p>
-            <p>● SERVER: ASIA-CONECTA-MAIN</p>
-            <p>● HARDWARE: ACCELERATION ON</p>
-            <p>● AVS MODE: <span id="set-avs">1</span></p>
-        </div>
-        <br><br>
-        <button onclick="openApp('home')" style="padding: 15px 40px; background: #00ff88; color: #000; font-weight: bold; border: none; border-radius: 10px; cursor: pointer;">KEMBALI KE HOME</button>
+        <h1>SETTINGS</h1><hr><br>
+        <p>● RESOLUSI: 1080p HD</p>
+        <p>● AVS MODE: <span id="cur-avs">1</span></p><br>
+        <p>Tekan [0] untuk kembali ke Home</p>
     </div>
 
     <div id="scan-dialog">
-        <h2 style="color: #ffcc00;">SYSTEM SCANNING</h2>
-        <p style="margin: 20px 0;">Hapus semua database channel lama?</p>
-        <div style="font-size: 1.5rem;">[0] YA | [1] TIDAK</div>
+        <h2 style="color:#ffcc00">HARD SCAN</h2>
+        <p>Hapus database channel?</p><br>
+        <p>[0] YA | [1] BATAL</p>
     </div>
 
     <div id="logo-conecta"><span class="hd-tag">HD</span><span class="con-text">CONECTA TV</span></div>
@@ -101,13 +72,10 @@
     <div id="alert-center">NO SIGNAL</div>
     
     <div id="info">
-        <h1 id="n" style="font-size: 3rem; color: #fff;"></h1>
-        <p id="m-txt" style="color: #ffcc00; font-weight: bold; font-size: 1.2rem;"></p>
-        <div style="display:flex; justify-content:space-between; margin-top:15px; font-weight: bold;">
-            <span>BUFFERING: <span id="load-pc">0%</span></span>
-            <span id="sig-val">SIG: 99%</span>
-        </div>
-        <div id="loading-wrap"><div id="loading-bar"></div></div>
+        <h1 id="n"></h1>
+        <p id="m-txt" style="color:#ffcc00"></p>
+        <div style="display:flex; justify-content:space-between; margin-top:10px;"><span>BUFFERING...</span><span id="load-pc">0%</span></div>
+        <div id="loading-bar"></div>
     </div>
 
     <video id="v" autoplay playsinline></video>
@@ -115,38 +83,21 @@
     <script>
         const v = document.getElementById('v');
         const h = new Hls();
-        let ch = [], cur = 0, b = "", mode = "AVS1", analogKill = false, isScan = false;
+        let ch = [], cur = 0, b = "", mode = "AVS1", analogKill = false, isScan = false, menuIdx = 0, currentApp = 'home';
 
-        function startOS() {
-            // Pas klik pertama, tampilkan Home Screen
-            document.getElementById('home').style.display = 'flex';
-            document.documentElement.requestFullscreen();
-            loadChannels(); 
-        }
+        function startOS() { openApp('home'); load(); }
 
         function openApp(app) {
-            // Sembunyikan semua
-            document.getElementById('home').style.display = 'none';
-            document.getElementById('browser-ui').style.display = 'none';
-            document.getElementById('settings-ui').style.display = 'none';
-            
-            if(app === 'home') document.getElementById('home').style.display = 'flex';
-            if(app === 'browser') document.getElementById('browser-ui').style.display = 'block';
-            if(app === 'settings') {
-                document.getElementById('settings-ui').style.display = 'block';
-                document.getElementById('set-avs').innerText = (mode === "AVS1" ? "1 (INDO)" : "2 (KIDS)");
-            }
-            if(app === 'tv') {
-                if(ch.length > 0) play(cur);
-            }
+            currentApp = app;
+            document.getElementById('home').style.display = (app === 'home') ? 'flex' : 'none';
+            document.getElementById('browser-ui').style.display = (app === 'browser') ? 'block' : 'none';
+            document.getElementById('settings-ui').style.display = (app === 'settings') ? 'block' : 'none';
+            if(app === 'tv') play(cur);
         }
 
         function play(i) {
             if (ch.length === 0) return;
-            if (i < 0) i = ch.length - 1;
-            if (i >= ch.length) i = 0;
             cur = i;
-
             const isAnalog = (i % 2 === 0);
             if (analogKill && isAnalog) {
                 h.stopLoad(); v.pause();
@@ -154,83 +105,96 @@
             } else {
                 document.getElementById('alert-center').style.display = 'none';
                 h.loadSource(ch[i].url); h.attachMedia(v);
-                showInfoBox();
+                showInfo();
             }
         }
 
-        function showInfoBox() {
-            const infoBox = document.getElementById('info');
-            const lBar = document.getElementById('loading-bar');
-            const lText = document.getElementById('load-pc');
-            infoBox.style.display = 'block';
-            
+        function showInfo() {
+            document.getElementById('info').style.display = 'block';
             let p = 0;
-            lBar.style.width = "0%";
             let iv = setInterval(() => {
-                p += Math.floor(Math.random() * 20);
-                if(p > 100) p = 100;
-                lBar.style.width = p + "%";
-                lText.innerText = p + "%";
-                if(p >= 100) { 
-                    clearInterval(iv); 
-                    setTimeout(() => { infoBox.style.display = 'none'; }, 2000); 
-                }
-            }, 150);
-
+                p += 20;
+                document.getElementById('loading-bar').style.width = p + "%";
+                document.getElementById('load-pc').innerText = p + "%";
+                if(p >= 100) { clearInterval(iv); setTimeout(() => document.getElementById('info').style.display = 'none', 2000); }
+            }, 100);
             document.getElementById('n').innerText = (cur+1) + ". " + ch[cur].name;
-            document.getElementById('m-txt').innerText = (cur % 2 === 0) ? "MODE: ANALOG WAVE" : "MODE: DIGITAL HD";
+            document.getElementById('m-txt').innerText = (cur % 2 === 0) ? "ANALOG WAVE" : "DIGITAL HD";
         }
 
+        // --- KEYDOWN LOGIC (PENGGABUNGAN ASLI + FITUR BARU) ---
         window.addEventListener('keydown', (e) => {
+            const c = e.keyCode;
             const key = e.key;
-            
-            // Shortcut Keluar Browser
-            if (document.getElementById('browser-ui').style.display === 'block' && key === "1") { openApp('home'); return; }
 
+            // 1. Logika Browser
+            if (currentApp === 'browser' && key === "1") { openApp('home'); return; }
+
+            // 2. Logika Scan
+            if (isScan) {
+                if (key === "0") { ch = []; load(); isScan = false; document.getElementById('scan-dialog').style.display = 'none'; }
+                if (key === "1") { isScan = false; document.getElementById('scan-dialog').style.display = 'none'; }
+                return;
+            }
+
+            // 3. Logika Home Screen (PR untuk geser menu)
+            if (currentApp === 'home') {
+                if (c == 33 || c == 427 || key == "ArrowUp") {
+                    menuIdx = (menuIdx + 1) % 3;
+                    updateMenu();
+                }
+                if (c == 34 || c == 428 || key == "ArrowDown") {
+                    menuIdx = (menuIdx - 1 + 3) % 3;
+                    updateMenu();
+                }
+            }
+
+            // 4. Logika PR/CH di TV Mode
+            if (currentApp === 'tv') {
+                if (c == 33 || c == 427 || key == "ArrowUp") play(cur + 1);
+                if (c == 34 || c == 428 || key == "ArrowDown") play(cur - 1);
+            }
+
+            // 5. Logika Angka (ASLI ZIDAN)
             if (/[0-9]/.test(key)) {
                 b += key;
                 document.getElementById('num').innerText = b;
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
-                    if (isScan) {
-                        if(b === "0") { ch = []; loadChannels(); }
-                        document.getElementById('scan-dialog').style.display = 'none';
-                        isScan = false;
-                    } 
-                    else if (b === "1062") { isScan = true; document.getElementById('scan-dialog').style.display = 'block'; }
-                    else if (b === "1888") { openApp('tv'); }
+                    // Fitur Khusus
+                    if (currentApp === 'home' && b.length === 1) {
+                        if (b === "1") openApp('tv');
+                        if (b === "2") openApp('browser');
+                        if (b === "3") openApp('settings');
+                    } else if (b === "0000") { mode = (mode === "AVS1" ? "AVS2" : "AVS1"); load(); }
                     else if (b === "999") { analogKill = !analogKill; play(cur); }
-                    else if (b === "0000") { mode = (mode === "AVS1" ? "AVS2" : "AVS1"); loadChannels(); }
+                    else if (b === "1062") { isScan = true; document.getElementById('scan-dialog').style.display = 'block'; }
+                    else if (b === "1111") { openApp('home'); }
                     else if (b === "82") location.reload();
-                    else if (b === "7091") openApp('settings');
-                    else { 
-                        let target = parseInt(b) - 1; 
-                        if(ch[target]) { openApp('tv'); play(target); }
+                    else {
+                        let target = parseInt(b) - 1;
+                        if (ch[target]) { openApp('tv'); play(target); }
                     }
                     b = ""; document.getElementById('num').innerText = "";
-                }, 750);
+                }, 700);
             }
-
-            // KONTROL PRCH FIX (Page Up / Page Down atau Arrow Up / Arrow Down)
-            if (key === "PageUp" || key === "ArrowUp") play(cur + 1);
-            if (key === "PageDown" || key === "ArrowDown") play(cur - 1);
-            
-            // KONTROL HOME (Tombol H atau Home)
-            if (key.toLowerCase() === "h" || key === "Home") openApp('home');
         });
 
-        function loadChannels() {
+        function updateMenu() {
+            document.querySelectorAll('.card').forEach((m, i) => {
+                m.className = (i === menuIdx) ? 'card active' : 'card';
+            });
+        }
+
+        function load() {
             let url = (mode === "AVS1") ? "https://iptv-org.github.io/iptv/languages/ind.m3u" : "https://iptv-org.github.io/iptv/categories/kids.m3u";
             fetch(url).then(r => r.text()).then(d => {
                 ch = [];
                 const lines = d.split('\n');
                 for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].includes('#EXTINF')) {
-                        const name = lines[i].split(',')[1].trim();
-                        const link = lines[i+1].trim();
-                        if(link.startsWith('http')) ch.push({ name, url: link });
-                    }
+                    if (lines[i].includes('#EXTINF')) ch.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
                 }
+                if(currentApp === 'tv') play(0);
             });
         }
     </script>
