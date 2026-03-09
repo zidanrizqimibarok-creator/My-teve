@@ -2,82 +2,56 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V11 - AAA3 V60 TURBO HYBRID</title>
+    <title>ZEII TV V11 - AAA3 V61 BMKG EDITION</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
     <style>
-        /* STYLE TV TABUNG JADUL 2012 */
         * { margin: 0; padding: 0; overflow: hidden; background: #000; }
         body { font-family: 'Courier New', Courier, monospace; color: #00fbff; text-shadow: 2px 2px #000; }
         
-        body::before {
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
-            z-index: 10; background-size: 100% 4px; pointer-events: none;
+        /* BMKG TICKER */
+        #bmkg-alert {
+            position: absolute; top: 0; left: 0; width: 100%; background: rgba(255, 0, 0, 0.85);
+            color: white; padding: 10px 0; font-weight: bold; z-index: 2000;
+            display: none; border-bottom: 3px solid yellow;
         }
+        marquee { font-size: 1.2rem; }
 
-        #noise {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif');
-            opacity: 0; z-index: 5; pointer-events: none; mix-blend-mode: overlay;
-        }
-
-        .analog-filter { filter: grayscale(0.4) contrast(1.2) brightness(1.1); animation: flicker 0.1s infinite; }
-        @keyframes flicker { 0% { opacity: 0.97; } 50% { opacity: 1; } 100% { opacity: 0.98; } }
-
+        /* TV STYLE */
+        #noise { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity: 0; z-index: 5; pointer-events: none; mix-blend-mode: overlay; }
         video { width: 100vw; height: 100vh; object-fit: contain; }
-        #num { position: absolute; top: 30px; right: 50px; font-size: 80px; font-weight: bold; z-index: 99; color: #00fbff; }
-
-        #info { 
-            position: absolute; bottom: 60px; left: 60px; padding: 20px; border: 4px solid #00fbff;
-            background: rgba(0, 40, 40, 0.9); z-index: 99; width: 450px; display: none;
-        }
-
-        #alert-center { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 3rem; color: #ff0000; font-weight: bold; border: 4px solid #ff0000; 
-            padding: 20px; display: none; z-index: 100; background: #000;
-        }
-
-        #scan-ui {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 500px; padding: 30px; background: #002222; border: 4px solid #00fbff;
-            display: none; z-index: 1000; text-align: center;
-        }
-
-        #shortcut {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 85%; height: 75%; background: rgba(0, 10, 10, 0.98); border: 2px solid #00fbff;
-            display: none; z-index: 500; padding: 20px; overflow-y: auto;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;
-        }
-        .sc-item { padding: 10px; border: 1px solid #004444; color: #008888; font-size: 14px; }
+        #num { position: absolute; top: 50px; right: 50px; font-size: 80px; font-weight: bold; z-index: 99; }
+        #info { position: absolute; bottom: 60px; left: 60px; padding: 20px; border: 4px solid #00fbff; background: rgba(0, 40, 40, 0.9); z-index: 99; width: 450px; display: none; }
+        #alert-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: #ff0000; font-weight: bold; border: 4px solid #ff0000; padding: 20px; display: none; z-index: 100; background: #000; }
+        
+        /* MENU & SHORTCUT */
+        #shortcut { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 75%; background: rgba(0, 10, 10, 0.98); border: 2px solid #00fbff; display: none; z-index: 1500; padding: 20px; overflow-y: auto; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+        .sc-item { padding: 10px; border: 1px solid #004444; color: #008888; }
         .sc-item.focus { background: #00fbff; color: #000; font-weight: bold; }
+        #scan-ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; padding: 30px; background: #002222; border: 4px solid #00fbff; display: none; z-index: 1000; text-align: center; }
         #usb-input { display: none; }
     </style>
 </head>
 <body onclick="document.documentElement.requestFullscreen(); v.play();">
 
+    <div id="bmkg-alert"><marquee id="bmkg-text">MEMUAT DATA BMKG...</marquee></div>
     <div id="noise"></div>
     <div id="num"></div>
     <div id="alert-center">⚠️ SINYAL TERACAK</div>
-    <input type="file" id="usb-input" accept=".m3u,.mp4">
+    <input type="file" id="usb-input">
 
     <div id="scan-ui">
-        <h2 style="letter-spacing:5px;">TURBO SCANNING 2x</h2>
-        <div id="scan-perc" style="font-size: 50px; margin: 15px 0; color:#00fbff;">0%</div>
-        <div style="margin-bottom:10px;">AKTIF: <span id="sc-good" style="color:#00fbff;">0</span></div>
-        <p id="sc-name" style="font-size:12px; color:#666; text-transform:uppercase;">INITIALIZING TUNER...</p>
+        <h2>TURBO SCANNING 2x</h2>
+        <div id="scan-perc" style="font-size: 50px; margin: 15px 0;">0%</div>
+        <p id="sc-name" style="font-size:12px; color:#666;">ANALYZING...</p>
     </div>
 
     <div id="shortcut"></div>
 
     <div id="info">
-        <h2 id="n" style="font-size: 2rem;"></h2>
-        <p id="mode-text" style="color: yellow; letter-spacing: 2px; font-weight:bold;"></p>
-        <div style="border: 2px solid #00fbff; height: 10px; margin: 10px 0;">
-            <div id="bar-fill" style="width:0%; height:100%; background:#00fbff;"></div>
-        </div>
-        <p id="btxt" style="font-size: 14px;">TUNING: 10s</p>
+        <h2 id="n"></h2>
+        <p id="mode-text" style="color: yellow;"></p>
+        <div style="border: 2px solid #00fbff; height: 10px; margin: 10px 0;"><div id="bar-fill" style="width:0%; height:100%; background:#00fbff;"></div></div>
+        <p id="btxt">TUNING: 10s</p>
     </div>
 
     <video id="v" playsinline autoplay></video>
@@ -86,17 +60,28 @@
     <script>
         const v = document.getElementById('v');
         const tv = document.getElementById('test-v');
-        const noise = document.getElementById('noise');
         const h = new Hls(); const th = new Hls();
-        const info = document.getElementById('info');
-        const btxt = document.getElementById('btxt');
-        const usbIn = document.getElementById('usb-input');
-        const num = document.getElementById('num');
         const scBox = document.getElementById('shortcut');
-        const alertBox = document.getElementById('alert-center');
-        const bar = document.getElementById('bar-fill');
-        
-        let ch = [], fullCh = [], cur = 0, scIdx = 0, b = "", mode = "AVS1", timerCD, count = 10, isSc = false;
+        let ch = [], fullCh = [], cur = 0, scIdx = 0, b = "", mode = "AVS1", timerCD, count = 10, isSc = false, isRecovery = false;
+
+        // 1. BMKG REAL-TIME MONITORING
+        async function checkBMKG() {
+            try {
+                // Deteksi Wilayah via IP
+                const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
+                const city = geo.city;
+
+                // Ambil Data Gempa BMKG
+                const res = await fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json').then(r => r.json());
+                const gempa = res.Infogempa.gempa;
+                
+                if (gempa.Potensi.includes("Tsunami") || parseFloat(gempa.Magnitude) >= 5.0) {
+                    document.getElementById('bmkg-alert').style.display = 'block';
+                    document.getElementById('bmkg-text').innerText = `⚠️ PERINGATAN BMKG: GEMPA M ${gempa.Magnitude} - LOKASI: ${gempa.Wilayah} - POTENSI: ${gempa.Potensi}. DETEKSI WILAYAH TV: ${city}`;
+                }
+            } catch (e) { console.log("BMKG Offline"); }
+        }
+        setInterval(checkBMKG, 60000); checkBMKG();
 
         function load() {
             const saved = localStorage.getItem('aaa3_channels');
@@ -105,8 +90,7 @@
                 const lines = d.split('\n'); let temp = [];
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].includes('#EXTINF')) {
-                        let type = Math.random() > 0.7 ? 'A' : 'D'; 
-                        temp.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim(), type: type });
+                        temp.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim(), type: Math.random() > 0.7 ? 'A' : 'D' });
                     }
                 }
                 fullCh = [...temp];
@@ -115,98 +99,66 @@
             });
         }
 
-        // DOUBLE SCAN TURBO (2x Cek per Channel)
-        async function turboScan() {
-            document.getElementById('scan-ui').style.display = 'block';
-            let good = 0, checked = [];
-            for(let i=0; i < ch.length; i++) {
-                document.getElementById('scan-perc').innerText = Math.round((i/ch.length)*100) + "%";
-                document.getElementById('sc-name').innerText = "LOCKING: " + ch[i].name;
-                
-                // Cek Pertama
-                let res1 = await check(ch[i].url, 2500);
-                if(!res1) {
-                    // Cek Kedua (Double Check) jika pertama gagal
-                    document.getElementById('sc-name').innerText = "RE-LOCKING: " + ch[i].name;
-                    res1 = await check(ch[i].url, 3500);
-                }
-
-                if(res1) { good++; checked.push(ch[i]); }
-                document.getElementById('sc-good').innerText = good;
-            }
-            ch = checked; localStorage.setItem('aaa3_channels', JSON.stringify(ch));
-            document.getElementById('scan-ui').style.display = 'none'; play(0);
-        }
-
-        function check(url, time) {
-            return new Promise((r) => {
-                th.loadSource(url); th.attachMedia(tv);
-                let t = setTimeout(() => { th.stopLoad(); r(false); }, time);
-                th.once(Hls.Events.FRAG_BUFFERED, () => { clearTimeout(t); r(true); });
-                th.once(Hls.Events.ERROR, () => { clearTimeout(t); r(false); });
-            });
-        }
-
-        function play(i) {
-            if (i < 0) i = ch.length - 1; if (i >= ch.length) i = 0;
-            cur = i; alertBox.style.display = 'none'; 
-            const isA = ch[i].type === 'A';
+        function play(i, sourceArr = ch) {
+            if (i < 0) i = sourceArr.length - 1; if (i >= sourceArr.length) i = 0;
+            cur = i; isSc = false; scBox.style.display = 'none';
+            document.getElementById('alert-center').style.display = 'none';
+            const it = sourceArr[i];
+            document.getElementById('n').innerText = (i + 1) + ". " + it.name;
+            document.getElementById('mode-text').innerText = it.type === 'A' ? "MODE: ANALOG" : "MODE: DIGITAL";
+            document.getElementById('info').style.display = 'block';
+            document.getElementById('noise').style.opacity = it.type === 'A' ? "0.3" : "0";
             
-            document.getElementById('n').innerText = (i + 1) + ". " + ch[i].name;
-            document.getElementById('mode-text').innerText = isA ? "MODE: ANALOG" : "MODE: DIGITAL";
-            info.style.display = 'block';
-            noise.style.opacity = isA ? "0.3" : "0";
-            v.className = isA ? "analog-filter" : "";
-
-            clearInterval(timerCD);
-            count = 10; bar.style.width = "0%";
-            btxt.innerText = "TUNING: " + count + "s";
-            h.loadSource(ch[i].url); h.attachMedia(v);
-
+            clearInterval(timerCD); count = 10;
+            h.loadSource(it.url); h.attachMedia(v);
             timerCD = setInterval(() => {
                 count--;
-                if(count >= 0) btxt.innerText = "TUNING: " + count + "s";
-                else {
+                if(count < 0) {
                     clearInterval(timerCD);
-                    if(v.paused || v.readyState < 3) alertBox.style.display = 'block';
-                    setTimeout(() => { info.style.display = 'none'; }, 2000);
+                    if(v.readyState < 3) document.getElementById('alert-center').style.display = 'block';
+                    setTimeout(() => { document.getElementById('info').style.display = 'none'; }, 2000);
                 }
             }, 1000);
-
-            v.onplaying = () => { alertBox.style.display = 'none'; bar.style.width = "100%"; btxt.innerText = "SIGNAL: OK"; };
+            v.onplaying = () => { document.getElementById('alert-center').style.display = 'none'; document.getElementById('bar-fill').style.width = "100%"; };
         }
 
-        // SEMUA SHORTCUT KEMBALI
+        // KONTROL REMOT
         window.addEventListener('keydown', (e) => {
             const c = e.keyCode;
             if (isSc) {
-                if (c == 33 || c == 427 || e.key == "ArrowUp") { scIdx = (scIdx > 0) ? scIdx - 1 : ch.length - 1; openSc(); }
-                if (c == 34 || c == 428 || e.key == "ArrowDown") { scIdx = (scIdx < ch.length - 1) ? scIdx + 1 : 0; openSc(); }
-                if (e.key == "0") { play(scIdx); isSc = false; scBox.style.display = 'none'; }
+                if (c == 33 || e.key == "ArrowUp") { scIdx = (scIdx > 0) ? scIdx - 1 : (isRecovery ? fullCh.length-1 : ch.length-1); openSc(); }
+                if (c == 34 || e.key == "ArrowDown") { scIdx = (scIdx < (isRecovery ? fullCh.length-1 : ch.length-1)) ? scIdx + 1 : 0; openSc(); }
+                if (e.key == "0") { 
+                    if(isRecovery) { ch.push(fullCh[scIdx]); localStorage.setItem('aaa3_channels', JSON.stringify(ch)); }
+                    play(scIdx, isRecovery ? fullCh : ch); isSc = false; isRecovery = false;
+                }
                 return;
             }
-            if (c == 33 || c == 427 || e.key == "ArrowUp") play(cur + 1);
-            if (c == 34 || c == 428 || e.key == "ArrowDown") {
-                if (b === "82") { localStorage.removeItem('aaa3_channels'); ch = [...fullCh]; play(0); b = ""; num.innerText = ""; }
+            if (c == 33 || e.key == "ArrowUp") play(cur + 1);
+            if (c == 34 || e.key == "ArrowDown") {
+                if (b === "82") { localStorage.removeItem('aaa3_channels'); ch = [...fullCh]; play(0); b = ""; }
                 else play(cur - 1);
             }
             if (/[0-9]/.test(e.key)) {
-                b += e.key; num.innerText = b;
+                b += e.key; document.getElementById('num').innerText = b;
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
-                    if (b === "7091") { scIdx = cur; isSc = true; openSc(); }
+                    if (b === "7091") { isSc = true; isRecovery = false; scIdx = cur; openSc(); }
+                    else if (b === "1945") { isSc = true; isRecovery = true; scIdx = 0; openSc(); } // RECOVERY MODE
                     else if (b === "1062") turboScan();
                     else if (b === "2701") usbIn.click();
                     else if (b === "0000") { mode = (mode === "AVS1" ? "AVS2" : "AVS1"); load(); }
                     else if (b !== "82") { let t = parseInt(b)-1; if(ch[t]) play(t); }
-                    if (b !== "82") { b = ""; num.innerText = ""; }
+                    if (b !== "82") { b = ""; document.getElementById('num').innerText = ""; }
                 }, 800);
             }
         });
 
         function openSc() {
-            scBox.innerHTML = ""; scBox.style.display = 'grid';
-            ch.forEach((it, i) => {
+            scBox.innerHTML = isRecovery ? "<h1 style='color:red'>RECOVERY MODE - SEMUA CHANNEL</h1>" : "";
+            scBox.style.display = 'grid';
+            let list = isRecovery ? fullCh : ch;
+            list.forEach((it, i) => {
                 let d = document.createElement('div');
                 d.className = "sc-item" + (i === scIdx ? " focus" : "");
                 d.innerHTML = `[${it.type}] ${i+1}. ${it.name}`;
@@ -215,10 +167,21 @@
             scBox.children[scIdx].scrollIntoView({ block: "center" });
         }
 
-        usbIn.onchange = (e) => {
-            const url = URL.createObjectURL(e.target.files[0]);
-            ch = [{name: "USB MEDIA", url: url, type: 'D'}]; play(0);
-        };
+        async function turboScan() {
+            document.getElementById('scan-ui').style.display = 'block';
+            let checked = [];
+            for(let i=0; i < ch.length; i++) {
+                document.getElementById('scan-perc').innerText = Math.round((i/ch.length)*100) + "%";
+                let ok = await new Promise(r => {
+                    th.loadSource(ch[i].url); th.attachMedia(tv);
+                    setTimeout(() => r(false), 3000);
+                    th.once(Hls.Events.FRAG_BUFFERED, () => r(true));
+                });
+                if(ok) checked.push(ch[i]);
+            }
+            ch = checked; localStorage.setItem('aaa3_channels', JSON.stringify(ch));
+            document.getElementById('scan-ui').style.display = 'none'; play(0);
+        }
 
         load();
     </script>
