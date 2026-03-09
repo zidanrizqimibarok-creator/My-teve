@@ -2,55 +2,40 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V11 - AAA3 EDITION</title>
+    <title>ZEII TV V11 - AAA3 PRO</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
     <style>
         /* ASLI V11 - TIDAK DIUBAH */
         * { margin: 0; padding: 0; overflow: hidden; background: #000; }
         body { font-family: sans-serif; color: #00fbff; }
         video { width: 100vw; height: 100vh; object-fit: contain; }
-        
-        #num { 
-            position: absolute; top: 10px; left: 10px; 
-            font-size: 80px; font-weight: bold; z-index: 99; 
-        }
-
+        #num { position: absolute; top: 10px; left: 10px; font-size: 80px; font-weight: bold; z-index: 99; }
         #info { 
             position: absolute; bottom: 50px; left: 50px; 
             padding: 10px 20px; border-left: 10px solid #00fbff;
             background: rgba(0,0,0,0.7); display: none; z-index: 99;
         }
 
-        /* PENAMBAHAN AAA3 (Sesuai Permintaan) */
-        #boot {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: flex; align-items: center; justify-content: center; z-index: 9999;
-        }
-        #alert-center {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            padding: 20px 40px; background: rgba(255, 0, 0, 0.8); color: white;
-            border: 4px solid white; border-radius: 15px; font-size: 2rem; font-weight: bold;
-            display: none; z-index: 100; text-align: center;
-        }
-        /* Style Buffer di dalam kotak info asli */
+        /* PENAMBAHAN AAA3 */
+        #boot { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        #alert-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; background: rgba(255, 0, 0, 0.8); color: white; border: 4px solid white; border-radius: 15px; font-size: 2rem; font-weight: bold; display: none; z-index: 100; text-align: center; }
         #bar-bg { width: 200px; height: 8px; background: #222; margin-top: 10px; border-radius: 4px; overflow: hidden; }
         #bar-fill { width: 0%; height: 100%; background: #00fbff; transition: 0.3s; }
 
-        /* Shortcut 7091 */
+        /* SHORTCUT 7091 - PR/CH NAV */
         #shortcut {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; height: 60%; background: rgba(0,10,20,0.9); border: 2px solid #00fbff;
+            width: 80%; height: 60%; background: rgba(0,10,20,0.95); border: 2px solid #00fbff;
             display: none; z-index: 500; padding: 20px; overflow-y: auto;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;
         }
-        .sc-item { padding: 10px; border: 1px solid #333; text-align: center; cursor: pointer; font-size: 12px; }
-        .sc-red { color: red; border-color: red; }
+        .sc-item { padding: 15px; border: 2px solid #333; text-align: center; color: #555; font-weight: bold; }
+        .sc-item.focus { border-color: #00fbff; color: #00fbff; background: rgba(0,251,255,0.1); transform: scale(1.05); }
     </style>
 </head>
 <body onclick="document.documentElement.requestFullscreen(); v.play();">
 
     <div id="boot"><h1 style="letter-spacing:10px;">AAA3 SET A BOX</h1></div>
-
     <div id="num"></div>
     <div id="alert-center">⚠️ SINYAL TERACAK</div>
     
@@ -58,9 +43,9 @@
 
     <div id="info">
         <h2 id="n"></h2>
-        <p>DIGITAL TV</p>
+        <p>DIGITAL TV - AAA3</p>
         <div id="bar-bg"><div id="bar-fill"></div></div>
-        <p id="btxt" style="font-size: 10px; margin-top: 5px;">BUFFER: 0%</p>
+        <p id="btxt" style="font-size: 10px; margin-top: 5px;">SIGNAL: 0%</p>
     </div>
 
     <video id="v" playsinline autoplay></video>
@@ -75,111 +60,89 @@
         const alertBox = document.getElementById('alert-center');
         const scBox = document.getElementById('shortcut');
         
-        let ch = [];
-        let cur = 0;
-        let b = "";
-        let h = new Hls();
-        let mode = "AVS1";
+        let ch = []; let fullCh = []; let cur = 0; let scIdx = 0; let b = "";
+        let h = new Hls(); let isSc = false;
 
-        // BOOTING 5 DETIK
         setTimeout(() => { document.getElementById('boot').style.display = 'none'; }, 5000);
 
-        // FETCH ASLI V11 (DITAMBAH LOGIKA AVS)
-        function load() {
-            let url = (mode === "AVS1") ? "https://iptv-org.github.io/iptv/languages/ind.m3u" : "https://iptv-org.github.io/iptv/categories/kids.m3u";
-            fetch(url)
-                .then(r => r.text())
-                .then(d => {
-                    ch = [];
-                    const lines = d.split('\n');
-                    for (let i = 0; i < lines.length; i++) {
-                        if (lines[i].includes('#EXTINF')) {
-                            ch.push({ 
-                                name: lines[i].split(',')[1].trim(), 
-                                url: lines[i+1].trim(),
-                                dead: false
-                            });
-                        }
+        function load(restore = false) {
+            const url = "https://iptv-org.github.io/iptv/languages/ind.m3u";
+            fetch(url).then(r => r.text()).then(d => {
+                const lines = d.split('\n'); let temp = [];
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].includes('#EXTINF')) {
+                        temp.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
                     }
-                    if(ch.length > 0) play(0);
-                });
+                }
+                fullCh = [...temp]; ch = [...temp];
+                play(0);
+            });
+        }
+
+        function scan1062() {
+            let valid = ch.filter(item => !item.isDead);
+            ch = valid; play(0);
         }
 
         function play(i) {
-            if (i < 0) i = ch.length - 1;
-            if (i >= ch.length) i = 0;
-            cur = i;
-
-            // Tampilkan Info Asli
+            if (i < 0) i = ch.length - 1; if (i >= ch.length) i = 0;
+            cur = i; isSc = false; scBox.style.display = 'none';
+            alertBox.style.display = 'none';
             n.innerText = (i + 1) + ". " + ch[i].name;
             info.style.display = 'block';
-            alertBox.style.display = 'none';
-            scBox.style.display = 'none';
 
-            // Engine V11
             if (h) h.destroy();
-            h = new Hls({
-                capLevelToPlayerSize: true,
-                maxBufferLength: 5,
-                enableWorker: false
-            });
-            
-            h.loadSource(ch[i].url);
-            h.attachMedia(v);
-            h.on(Hls.Events.MANIFEST_PARSED, () => v.play());
+            h = new Hls({ capLevelToPlayerSize: true, maxBufferLength: 5, enableWorker: false });
+            h.loadSource(ch[i].url); h.attachMedia(v);
+            h.on(Hls.Events.ERROR, (e, d) => { if(d.fatal) { alertBox.style.display = 'block'; ch[cur].isDead = true; } });
 
-            // ERROR HANDLING
-            h.on(Hls.Events.ERROR, (e, data) => {
-                if(data.fatal) {
-                    alertBox.style.display = 'block';
-                    ch[cur].dead = true;
-                }
-            });
-
-            // BUFFER LOGIC
             v.onprogress = () => {
                 if (v.buffered.length > 0) {
                     let p = Math.round((v.buffered.end(0) - v.currentTime) * 20);
                     if (p > 100) p = 100;
-                    bar.style.width = p + "%";
-                    btxt.innerText = "BUFFER: " + p + "%";
-                    if (p > 15) {
-                        setTimeout(() => { info.style.display = 'none'; }, 3000);
-                    }
+                    bar.style.width = p + "%"; btxt.innerText = "SIGNAL: " + p + "%";
+                    if (p > 15) setTimeout(() => { info.style.display = 'none'; }, 3000);
                 }
             };
         }
 
         function showShortcut() {
-            scBox.innerHTML = "";
-            scBox.style.display = 'grid';
-            ch.forEach((item, index) => {
+            isSc = true; scBox.innerHTML = ""; scBox.style.display = 'grid';
+            ch.forEach((item, i) => {
                 let d = document.createElement('div');
-                d.className = "sc-item " + (item.dead ? "sc-red" : "");
-                d.innerHTML = `${index+1}<br>${item.name.substring(0,10)}`;
-                d.onclick = () => play(index);
+                d.className = "sc-item" + (i === scIdx ? " focus" : "");
+                d.innerHTML = `CH ${i+1}<br>${item.name.substring(0,15)}`;
                 scBox.appendChild(d);
             });
+            scBox.children[scIdx].scrollIntoView({ block: "center" });
         }
 
         window.addEventListener('keydown', (e) => {
             const c = e.keyCode;
+            // NAVIGASI SHORTCUT (PR/CH)
+            if (isSc) {
+                if (c == 33 || c == 427 || e.key == "ArrowUp") { scIdx = (scIdx > 0) ? scIdx - 1 : ch.length - 1; showShortcut(); }
+                if (c == 34 || c == 428 || e.key == "ArrowDown") { scIdx = (scIdx < ch.length - 1) ? scIdx + 1 : 0; showShortcut(); }
+                if (e.key == "Enter") play(scIdx);
+                return;
+            }
+
+            // NAVIGASI TV ASLI
             if (c == 33 || c == 427 || e.key == "ArrowUp") play(cur + 1);
             if (c == 34 || c == 428 || e.key == "ArrowDown") play(cur - 1);
+            if (e.key == "Enter") { scIdx = cur; showShortcut(); }
 
             if (/[0-9]/.test(e.key)) {
-                b += e.key;
-                num.innerText = b;
+                b += e.key; num.innerText = b;
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
-                    if (b === "7091") showShortcut();
-                    else if (b === "0000") { mode = (mode === "AVS1" ? "AVS2" : "AVS1"); load(); }
-                    else {
-                        let target = parseInt(b) - 1;
-                        if (ch[target]) play(target);
-                    }
+                    if (b === "7091") { scIdx = cur; showShortcut(); }
+                    else if (b === "1062") scan1062();
+                    else if (b === "1083") { ch = [...fullCh]; play(0); }
+                    else if (b === "0000") { /* Ganti AVS logic */ }
+                    else { let t = parseInt(b)-1; if(ch[t]) play(t); }
                     b = ""; num.innerText = "";
-                }, 700);
+                }, 800);
             }
         });
 
