@@ -2,10 +2,10 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V11 - AAA3 V50 PRO</title>
+    <title>ZEII TV V11 - AAA3 V51 REAL SCAN</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
     <style>
-        /* ASLI V11 */
+        /* ASLI V11 - TIDAK DIUBAH */
         * { margin: 0; padding: 0; overflow: hidden; background: #000; }
         body { font-family: sans-serif; color: #00fbff; }
         video { width: 100vw; height: 100vh; object-fit: contain; }
@@ -16,42 +16,44 @@
             background: rgba(0,0,0,0.7); display: none; z-index: 99;
         }
 
-        /* AAA3: Scan & Shortcut Style */
-        #boot { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        #alert-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; background: rgba(255, 0, 0, 0.8); color: white; border: 4px solid white; border-radius: 15px; font-size: 2rem; font-weight: bold; display: none; z-index: 100; text-align: center; }
-        
+        /* AAA3 REAL SCAN UI */
         #scan-ui {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 450px; padding: 30px; background: #050505; border: 4px solid #00fbff;
-            display: none; z-index: 1000; text-align: center; border-radius: 20px;
+            width: 400px; padding: 25px; background: #000; border: 4px solid #00fbff;
+            display: none; z-index: 1000; text-align: center; border-radius: 10px;
         }
+        .sc-count { display: flex; justify-content: space-between; margin: 15px 0; font-weight: bold; }
 
+        /* SHORTCUT 7091 */
         #shortcut {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 85%; height: 75%; background: rgba(0,0,0,0.95); border: 2px solid #00fbff;
             display: none; z-index: 500; padding: 20px; overflow-y: auto;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;
         }
-        .sc-item { padding: 15px; border: 1px solid #222; color: #555; border-radius: 5px; text-align: left; }
+        .sc-item { padding: 12px; border: 1px solid #222; color: #555; text-align: left; }
         .sc-item.focus { border-color: #00fbff; color: #00fbff; background: rgba(0,251,255,0.1); }
 
         #bar-bg { width: 200px; height: 8px; background: #222; margin-top: 10px; border-radius: 4px; overflow: hidden; }
         #bar-fill { width: 0%; height: 100%; background: #00fbff; transition: 0.3s; }
+        #boot { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center; z-index: 9999; }
     </style>
 </head>
 <body onclick="document.documentElement.requestFullscreen(); v.play();">
 
     <div id="boot"><h1 style="letter-spacing:10px;">AAA3 SET A BOX</h1></div>
     <div id="num"></div>
-    <div id="alert-center">⚠️ SINYAL TERACAK</div>
     
     <div id="scan-ui">
-        <h2 style="color:#00fbff;">SCANNING SATELIT...</h2>
-        <div style="display:flex; justify-content:space-around; margin:20px 0;">
-            <div style="color:red;">RUSAK: <span id="sc-bad">0</span></div>
-            <div style="color:#00fbff;">AKTIF: <span id="sc-good">0</span></div>
+        <h2 style="color:#00fbff; font-size: 1.2rem;">DEEP SCANNING V51...</h2>
+        <div class="sc-count">
+            <div style="color:red;">BAD: <span id="sc-bad">0</span></div>
+            <div style="color:#00fbff;">OK: <span id="sc-good">0</span></div>
         </div>
-        <div id="sc-name" style="font-size:12px; color:#666;">Silahkan Tunggu...</div>
+        <p id="sc-name" style="font-size:11px; color:#555;">Initializing Heartbeat...</p>
+        <div style="width:100%; height:4px; background:#111; margin-top:10px;">
+            <div id="sc-progress" style="width:0%; height:100%; background:#00fbff;"></div>
+        </div>
     </div>
 
     <div id="shortcut"></div>
@@ -60,24 +62,23 @@
         <h2 id="n"></h2>
         <p>DIGITAL TV - AAA3</p>
         <div id="bar-bg"><div id="bar-fill"></div></div>
-        <p id="btxt" style="font-size: 10px; margin-top: 5px;">BUFFER: 0%</p>
+        <p id="btxt" style="font-size: 10px; margin-top: 5px;">SIGNAL: 0%</p>
     </div>
 
     <video id="v" playsinline autoplay></video>
+    <video id="test-v" style="display:none;"></video>
 
     <script>
         const v = document.getElementById('v');
+        const tv = document.getElementById('test-v');
+        const h = new Hls(); const th = new Hls();
         const num = document.getElementById('num');
         const info = document.getElementById('info');
-        const n = document.getElementById('n');
-        const bar = document.getElementById('bar-fill');
-        const btxt = document.getElementById('btxt');
-        const alertBox = document.getElementById('alert-center');
         const scBox = document.getElementById('shortcut');
         const scanUI = document.getElementById('scan-ui');
         
         let ch = []; let fullCh = []; let cur = 0; let scIdx = 0; let b = "";
-        let h = new Hls(); let isSc = false; let mode = "AVS1";
+        let isSc = false; let mode = "AVS1";
 
         setTimeout(() => { document.getElementById('boot').style.display = 'none'; }, 5000);
 
@@ -87,7 +88,7 @@
                 const lines = d.split('\n'); let temp = [];
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].includes('#EXTINF')) {
-                        temp.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim(), dead: false });
+                        temp.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
                     }
                 }
                 fullCh = [...temp]; ch = [...temp];
@@ -95,39 +96,40 @@
             });
         }
 
-        async function doScan() {
+        async function realScan() {
             scanUI.style.display = 'block';
-            let bad = 0; let good = 0;
-            for(let i=0; i < ch.length; i++){
-                document.getElementById('sc-name').innerText = "Cek: " + ch[i].name;
-                try {
-                    const res = await fetch(ch[i].url, { method: 'HEAD', mode: 'no-cors' });
-                    good++; document.getElementById('sc-good').innerText = good;
-                } catch(e) {
-                    bad++; document.getElementById('sc-bad').innerText = bad;
-                    ch[i].dead = true;
-                }
-                if(i % 5 === 0) await new Promise(r => setTimeout(r, 10)); // Biar gak lag
+            let bad = 0; let good = 0; let checked = [];
+            
+            for(let i=0; i < ch.length; i++) {
+                document.getElementById('sc-name').innerText = "Testing: " + ch[i].name;
+                document.getElementById('sc-progress').style.width = ((i/ch.length)*100) + "%";
+                
+                let isAlive = await new Promise((resolve) => {
+                    th.loadSource(ch[i].url); th.attachMedia(tv);
+                    let timeout = setTimeout(() => { th.stopLoad(); resolve(false); }, 2500); // 2.5 detik per channel
+                    th.on(Hls.Events.MANIFEST_PARSED, () => { clearTimeout(timeout); resolve(true); });
+                    th.on(Hls.Events.ERROR, () => { clearTimeout(timeout); resolve(false); });
+                });
+
+                if(isAlive) { good++; document.getElementById('sc-good').innerText = good; checked.push(ch[i]); }
+                else { bad++; document.getElementById('sc-bad').innerText = bad; }
             }
-            ch = ch.filter(item => !item.dead);
-            scanUI.style.display = 'none';
-            play(0);
+            ch = checked; scanUI.style.display = 'none'; play(0);
         }
 
         function play(i) {
             if (i < 0) i = ch.length - 1; if (i >= ch.length) i = 0;
-            cur = i; isSc = false; scBox.style.display = 'none'; alertBox.style.display = 'none';
-            n.innerText = (i + 1) + ". " + ch[i].name;
+            cur = i; isSc = false; scBox.style.display = 'none';
+            document.getElementById('n').innerText = (i + 1) + ". " + ch[i].name;
             info.style.display = 'block';
-            if (h) h.destroy();
-            h = new Hls({ maxBufferLength: 5, enableWorker: false });
             h.loadSource(ch[i].url); h.attachMedia(v);
-            h.on(Hls.Events.ERROR, (e, d) => { if(d.fatal) alertBox.style.display = 'block'; });
+            
             v.onprogress = () => {
                 if (v.buffered.length > 0) {
                     let p = Math.round((v.buffered.end(0) - v.currentTime) * 20);
                     if (p > 100) p = 100;
-                    bar.style.width = p + "%"; btxt.innerText = "BUFFER: " + p + "%";
+                    document.getElementById('bar-fill').style.width = p + "%";
+                    document.getElementById('btxt').innerText = "SIGNAL: " + p + "%";
                     if (p > 15) setTimeout(() => { info.style.display = 'none'; }, 3000);
                 }
             };
@@ -138,10 +140,10 @@
             ch.forEach((item, i) => {
                 let d = document.createElement('div');
                 d.className = "sc-item" + (i === scIdx ? " focus" : "");
-                d.innerHTML = `<span style="color:#00fbff">${i+1}.</span> ${item.name}`;
+                d.innerHTML = `<b style="color:#00fbff">${i+1}.</b> ${item.name}`;
                 scBox.appendChild(d);
             });
-            scBox.children[scIdx].scrollIntoView({ block: "center", behavior: "smooth" });
+            scBox.children[scIdx].scrollIntoView({ block: "center" });
         }
 
         window.addEventListener('keydown', (e) => {
@@ -149,7 +151,7 @@
             if (isSc) {
                 if (c == 33 || c == 427 || e.key == "ArrowUp") { scIdx = (scIdx > 0) ? scIdx - 1 : ch.length - 1; openShortcut(); }
                 if (c == 34 || c == 428 || e.key == "ArrowDown") { scIdx = (scIdx < ch.length - 1) ? scIdx + 1 : 0; openShortcut(); }
-                if (e.key == "0") play(scIdx); // Tombol 0 buat OK
+                if (e.key == "0") play(scIdx); // OK Pakai 0
                 return;
             }
 
@@ -161,7 +163,7 @@
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
                     if (b === "7091") { scIdx = cur; openShortcut(); }
-                    else if (b === "1062") doScan();
+                    else if (b === "1062") realScan();
                     else if (b === "1083") { ch = [...fullCh]; play(0); }
                     else if (b === "0000") { mode = (mode === "AVS1" ? "AVS2" : "AVS1"); load(); }
                     else { let t = parseInt(b)-1; if(ch[t]) play(t); }
