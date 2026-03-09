@@ -2,102 +2,73 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>AAA3 SET A BOX - V42</title>
+    <title>AAA3 SET A BOX - V43</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; overflow: hidden; }
-        body { background: #000; color: white; width: 100vw; height: 100vh; }
+        * { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        body { width: 100vw; height: 100vh; }
         
-        /* HOME SCREEN */
-        #home {
-            width: 100%; height: 100%; position: absolute; z-index: 1000;
-            background: radial-gradient(circle, #001f3f 0%, #000 100%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        /* BOOTING SCREEN */
+        #boot {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 9999;
         }
-        .logo { font-size: 3rem; font-weight: 900; color: #00fbff; margin-bottom: 50px; text-shadow: 0 0 20px #00fbff; }
-        .menu-row { display: flex; gap: 20px; }
-        .icon {
-            width: 130px; height: 130px; background: rgba(255,255,255,0.05);
-            border: 3px solid transparent; border-radius: 20px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.3s;
-        }
-        .icon.active, .icon:hover { border-color: #00fbff; background: rgba(0,251,255,0.1); transform: scale(1.1); }
-        .icon span { margin-top: 10px; font-weight: bold; font-size: 0.9rem; }
+        .logo { font-size: 3rem; color: #00fbff; font-weight: 900; letter-spacing: 10px; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        /* TV MODE */
-        #tv-layer { position: absolute; width: 100%; height: 100%; display: none; background: #000; }
-        video { width: 100%; height: 100%; background: #000; }
+        /* TV LAYER */
+        video { width: 100vw; height: 100vh; object-fit: contain; }
         
         #alert-center {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            padding: 30px; background: rgba(255, 0, 0, 0.9); border: 4px solid #fff;
-            border-radius: 15px; font-size: 2rem; font-weight: bold; display: none; z-index: 100;
+            padding: 30px 60px; background: rgba(255, 0, 0, 0.9); color: white;
+            border: 5px solid white; border-radius: 20px; font-size: 2.5rem; 
+            font-weight: bold; display: none; z-index: 200; text-align: center;
         }
 
-        #info-box {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            width: 80%; max-width: 500px; padding: 20px; background: rgba(0,0,0,0.8);
-            border-bottom: 5px solid #00fbff; border-radius: 10px; display: none;
+        #info-box { 
+            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); 
+            width: 80%; max-width: 600px; padding: 25px; background: rgba(0, 5, 15, 0.95);
+            border-bottom: 6px solid #00fbff; border-radius: 15px; display: none; z-index: 90;
         }
+        #ch-name { color: #fff; font-size: 2rem; font-weight: 900; }
+        .bar-bg { width: 100%; height: 8px; background: #111; margin-top: 10px; border-radius: 4px; overflow: hidden; }
+        #bar-fill { width: 0%; height: 100%; background: #00fbff; transition: 0.4s; }
 
-        /* SETTINGS */
-        #settings-layer { position: absolute; width: 100%; height: 100%; background: #111; display: none; padding: 50px; z-index: 900; }
-        .set-btn { padding: 10px 20px; background: #222; border: 1px solid #00fbff; color: #00fbff; cursor: pointer; margin: 10px; }
-        .set-btn.active { background: #00fbff; color: #000; }
-
-        #num-pop { position: absolute; top: 20px; right: 40px; font-size: 80px; color: #00fbff; font-weight: bold; z-index: 1100; }
+        #num-pop { position: absolute; top: 30px; right: 50px; font-size: 100px; font-weight: 900; color: #00fbff; z-index: 100; }
     </style>
 </head>
-<body onclick="goFull()">
+<body onclick="v.play()">
+
+    <div id="boot">
+        <div class="logo">AAA3 SET A BOX</div>
+        <p style="color: #555; margin-top: 20px;">SYSTEM LOADING...</p>
+    </div>
 
     <div id="num-pop"></div>
-
-    <div id="home">
-        <div class="logo">AAA3 SET A BOX</div>
-        <div class="menu-row">
-            <div class="icon active" id="i1"><span>📺 TV</span></div>
-            <div class="icon" id="i2"><span>⚙️ SETTINGS</span></div>
-            <div class="icon" id="i3"><span>💿 DVD</span></div>
-            <div class="icon" id="i4"><span>🔌 USB</span></div>
-            <div class="icon" id="i5"><span>🌐 BROWSER</span></div>
-        </div>
-        <p style="margin-top: 30px; color: #555;">Gunakan Panah & OK untuk memilih</p>
+    <div id="alert-center">⚠️ SINYAL TERACAK</div>
+    
+    <div id="info-box">
+        <div id="ch-name">MENCARI SINYAL...</div>
+        <div class="bar-bg"><div id="bar-fill"></div></div>
+        <p id="stat" style="color:#00fbff; font-size:1rem; margin-top:10px;">CONNECTING...</p>
     </div>
 
-    <div id="tv-layer">
-        <div id="alert-center">⚠️ SINYAL TERACAK</div>
-        <video id="v" autoplay playsinline></video>
-        <div id="info-box">
-            <h2 id="ch-title">METRO TV</h2>
-            <div style="width:100%; height:5px; background:#222; margin-top:10px;">
-                <div id="bar" style="width:0%; height:100%; background:#00fbff;"></div>
-            </div>
-            <p id="stat" style="font-size:0.8rem; color:#00fbff; margin-top:5px;">Connecting...</p>
-        </div>
-    </div>
-
-    <div id="settings-layer">
-        <h1>SETTINGS</h1>
-        <hr style="margin: 20px 0; border: 1px solid #333;">
-        <div style="font-size: 1.5rem;">
-            <p>PILIH MODE IPTV:</p>
-            <button class="set-btn active" id="b1">AVS 1 (INDONESIA)</button>
-            <button class="set-btn" id="b2">AVS 2 (KIDS)</button>
-        </div>
-        <p style="margin-top: 50px;">Tekan 7811 untuk kembali ke Home</p>
-    </div>
+    <video id="v" playsinline autoplay></video>
 
     <script>
         const v = document.getElementById('v');
         const hls = new Hls();
-        let ch = []; let cur = 0; let b = ""; let menuIdx = 1; let mode = "AVS1";
-        let isTV = false;
+        let ch = []; let cur = 0; let b = ""; let mode = "AVS1";
 
-        function goFull() {
-            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-        }
+        // 1. BOOTING LOGIC
+        setTimeout(() => {
+            document.getElementById('boot').style.display = 'none';
+            loadCh();
+        }, 5000); // Booting 5 detik
 
+        // 2. LOAD CHANNEL (AVS1 & AVS2)
         function loadCh() {
             const url = (mode === "AVS1") ? "https://iptv-org.github.io/iptv/languages/ind.m3u" : "https://iptv-org.github.io/iptv/categories/kids.m3u";
             fetch(url).then(r => r.text()).then(d => {
@@ -105,71 +76,67 @@
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].includes('#EXTINF')) ch.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
                 }
-                if (isTV) playCh(0);
+                playCh(0);
             });
         }
 
+        // 3. PLAY LOGIC (V11 ENGINE)
         function playCh(i) {
-            if (i < 0) i = ch.length - 1; if (i >= ch.length) i = 0;
+            if (i < 0) i = ch.length - 1;
+            if (i >= ch.length) i = 0;
             cur = i;
+            
             document.getElementById('alert-center').style.display = 'none';
+            document.getElementById('ch-name').innerText = (i + 1) + ". " + ch[i].name;
             document.getElementById('info-box').style.display = 'block';
-            document.getElementById('ch-title').innerText = (i+1) + ". " + ch[i].name;
-            
-            hls.loadSource(ch[i].url); hls.attachMedia(v);
-            hls.on(Hls.Events.ERROR, () => { document.getElementById('alert-center').style.display = 'block'; });
-            
+
+            if (Hls.isSupported()) {
+                hls.destroy();
+                const h = new Hls({ maxBufferLength: 10, enableWorker: false });
+                h.loadSource(ch[i].url);
+                h.attachMedia(v);
+                h.on(Hls.Events.MANIFEST_PARSED, () => v.play());
+                h.on(Hls.Events.ERROR, () => { document.getElementById('alert-center').style.display = 'block'; });
+            }
+
             v.onprogress = () => {
                 if (v.buffered.length > 0) {
                     let p = Math.round((v.buffered.end(0) - v.currentTime) * 20);
-                    if(p > 100) p = 100;
-                    document.getElementById('bar').style.width = p + "%";
-                    document.getElementById('stat').innerText = "Signal: " + p + "%";
-                    if(p > 10) setTimeout(() => { document.getElementById('info-box').style.display = 'none'; }, 3000);
+                    if (p > 100) p = 100;
+                    document.getElementById('bar-fill').style.width = p + "%";
+                    document.getElementById('stat').innerText = "SIGNAL: " + p + "%";
+                    if (p > 15) setTimeout(() => { document.getElementById('info-box').style.display = 'none'; }, 3000);
                 }
             };
         }
 
+        // 4. REMOTE CONTROL (NAVIGASI V6 ENGINE)
         window.addEventListener('keydown', (e) => {
-            // NAVIGASI HOME
-            if (!isTV && document.getElementById('home').style.display !== 'none') {
-                if (e.key === "ArrowRight") { menuIdx = menuIdx < 5 ? menuIdx + 1 : 1; updateMenu(); }
-                if (e.key === "ArrowLeft") { menuIdx = menuIdx > 1 ? menuIdx - 1 : 5; updateMenu(); }
-                if (e.key === "Enter") {
-                    if (menuIdx === 1) { isTV = true; document.getElementById('home').style.display = 'none'; document.getElementById('tv-layer').style.display = 'block'; playCh(0); }
-                    if (menuIdx === 2) { document.getElementById('home').style.display = 'none'; document.getElementById('settings-layer').style.display = 'block'; }
-                }
-            }
+            const c = e.keyCode;
+            
+            // Tombol PR/CH (KeyCodes dari V6 Engine)
+            if (c == 33 || c == 427 || e.key == "ArrowUp") playCh(cur + 1);    // CH+
+            if (c == 34 || c == 428 || e.key == "ArrowDown") playCh(cur - 1);  // CH-
 
-            // NAVIGASI TV (PR/CH)
-            if (isTV) {
-                if (e.key === "ArrowUp") playCh(cur - 1);
-                if (e.key === "ArrowDown") playCh(cur + 1);
-            }
-
-            // KODE KHUSUS
+            // Tombol Angka & Kode
             if (/[0-9]/.test(e.key)) {
-                b += e.key; document.getElementById('num-pop').innerText = b;
+                b += e.key;
+                document.getElementById('num-pop').innerText = b;
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
-                    if (b === "7811") location.reload(); // Reset ke Home
-                    if (b === "1062") loadCh();
-                    if (isTV && ch[parseInt(b)-1]) playCh(parseInt(b)-1);
+                    if (b === "0000") {
+                        mode = (mode === "AVS1") ? "AVS2" : "AVS1";
+                        loadCh();
+                    } else if (b === "1062") {
+                        loadCh();
+                    } else {
+                        let target = parseInt(b) - 1;
+                        if (ch[target]) playCh(target);
+                    }
                     b = ""; document.getElementById('num-pop').innerText = "";
                 }, 1000);
             }
         });
-
-        function updateMenu() {
-            document.querySelectorAll('.icon').forEach(i => i.classList.remove('active'));
-            document.getElementById('i' + menuIdx).classList.add('active');
-        }
-
-        // Setting AVS
-        document.getElementById('b1').onclick = () => { mode = "AVS1"; document.getElementById('b1').classList.add('active'); document.getElementById('b2').classList.remove('active'); loadCh(); };
-        document.getElementById('b2').onclick = () => { mode = "AVS2"; document.getElementById('b2').classList.add('active'); document.getElementById('b1').classList.remove('active'); loadCh(); };
-
-        loadCh();
     </script>
 </body>
 </html>
