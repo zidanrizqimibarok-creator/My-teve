@@ -2,78 +2,78 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V11 - AAA3 V51 REAL SCAN</title>
+    <title>ZEII TV V11 - AAA3 V52 ULTRA SCAN</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
     <style>
-        /* ASLI V11 - TIDAK DIUBAH */
+        /* ASLI V11 */
         * { margin: 0; padding: 0; overflow: hidden; background: #000; }
-        body { font-family: sans-serif; color: #00fbff; }
+        body { font-family: 'Courier New', Courier, monospace; color: #00fbff; }
         video { width: 100vw; height: 100vh; object-fit: contain; }
         #num { position: absolute; top: 10px; left: 10px; font-size: 80px; font-weight: bold; z-index: 99; }
         #info { 
             position: absolute; bottom: 50px; left: 50px; 
-            padding: 10px 20px; border-left: 10px solid #00fbff;
-            background: rgba(0,0,0,0.7); display: none; z-index: 99;
+            padding: 15px 25px; border-left: 8px solid #00fbff;
+            background: rgba(0,10,20,0.8); display: none; z-index: 99;
         }
 
-        /* AAA3 REAL SCAN UI */
+        /* NEW SCAN STYLE V52 */
         #scan-ui {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 400px; padding: 25px; background: #000; border: 4px solid #00fbff;
-            display: none; z-index: 1000; text-align: center; border-radius: 10px;
+            width: 500px; padding: 40px; background: rgba(0,5,10,0.95); 
+            border: 2px solid #00fbff; box-shadow: 0 0 50px #00fbff;
+            display: none; z-index: 1000; text-align: center; border-radius: 5px;
         }
-        .sc-count { display: flex; justify-content: space-between; margin: 15px 0; font-weight: bold; }
+        .scan-bar-container { width: 100%; height: 20px; background: #111; margin: 20px 0; border: 1px solid #333; }
+        #scan-progress { width: 0%; height: 100%; background: linear-gradient(90deg, #005555, #00fbff); transition: 0.1s; }
+        .stats { display: flex; justify-content: space-around; font-size: 1.2rem; font-weight: bold; }
 
         /* SHORTCUT 7091 */
         #shortcut {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 85%; height: 75%; background: rgba(0,0,0,0.95); border: 2px solid #00fbff;
+            width: 90%; height: 80%; background: rgba(0,0,0,0.98); border: 1px solid #00fbff;
             display: none; z-index: 500; padding: 20px; overflow-y: auto;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px;
         }
-        .sc-item { padding: 12px; border: 1px solid #222; color: #555; text-align: left; }
-        .sc-item.focus { border-color: #00fbff; color: #00fbff; background: rgba(0,251,255,0.1); }
+        .sc-item { padding: 12px; border: 1px solid #111; color: #333; transition: 0.2s; }
+        .sc-item.focus { background: #00fbff; color: #000; font-weight: bold; transform: scale(1.02); }
 
-        #bar-bg { width: 200px; height: 8px; background: #222; margin-top: 10px; border-radius: 4px; overflow: hidden; }
-        #bar-fill { width: 0%; height: 100%; background: #00fbff; transition: 0.3s; }
         #boot { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center; z-index: 9999; }
     </style>
 </head>
 <body onclick="document.documentElement.requestFullscreen(); v.play();">
 
-    <div id="boot"><h1 style="letter-spacing:10px;">AAA3 SET A BOX</h1></div>
+    <div id="boot"><h1 style="letter-spacing:15px; text-shadow: 0 0 20px #00fbff;">AAA3 SYSTEM</h1></div>
     <div id="num"></div>
     
     <div id="scan-ui">
-        <h2 style="color:#00fbff; font-size: 1.2rem;">DEEP SCANNING V51...</h2>
-        <div class="sc-count">
-            <div style="color:red;">BAD: <span id="sc-bad">0</span></div>
-            <div style="color:#00fbff;">OK: <span id="sc-good">0</span></div>
+        <div style="font-size: 0.8rem; opacity: 0.6; margin-bottom: 10px;">AAA3 DEEP ANALYZER v52</div>
+        <h2 style="letter-spacing: 5px;">SCANNING...</h2>
+        <div class="scan-bar-container"><div id="scan-progress"></div></div>
+        <div class="stats">
+            <div style="color:#ff3b3b;">DEAD: <span id="sc-bad">0</span></div>
+            <div style="color:#00fbff;">ALIVE: <span id="sc-good">0</span></div>
         </div>
-        <p id="sc-name" style="font-size:11px; color:#555;">Initializing Heartbeat...</p>
-        <div style="width:100%; height:4px; background:#111; margin-top:10px;">
-            <div id="sc-progress" style="width:0%; height:100%; background:#00fbff;"></div>
-        </div>
+        <div id="sc-name" style="margin-top:20px; font-size:10px; color:#555; white-space: nowrap; overflow: hidden;">Waiting...</div>
     </div>
 
     <div id="shortcut"></div>
 
     <div id="info">
-        <h2 id="n"></h2>
-        <p>DIGITAL TV - AAA3</p>
-        <div id="bar-bg"><div id="bar-fill"></div></div>
+        <h2 id="n" style="font-size: 2rem;"></h2>
+        <p style="letter-spacing: 3px; font-size: 0.7rem;">AAA3 DIGITAL RECEIVER</p>
+        <div style="width: 250px; height: 5px; background: #111; margin-top:10px;">
+            <div id="bar-fill" style="width:0%; height:100%; background:#00fbff;"></div>
+        </div>
         <p id="btxt" style="font-size: 10px; margin-top: 5px;">SIGNAL: 0%</p>
     </div>
 
     <video id="v" playsinline autoplay></video>
-    <video id="test-v" style="display:none;"></video>
+    <video id="test-v" style="display:none;" muted></video>
 
     <script>
         const v = document.getElementById('v');
         const tv = document.getElementById('test-v');
         const h = new Hls(); const th = new Hls();
-        const num = document.getElementById('num');
-        const info = document.getElementById('info');
         const scBox = document.getElementById('shortcut');
         const scanUI = document.getElementById('scan-ui');
         
@@ -96,32 +96,51 @@
             });
         }
 
-        async function realScan() {
+        async function deepScan() {
             scanUI.style.display = 'block';
             let bad = 0; let good = 0; let checked = [];
             
             for(let i=0; i < ch.length; i++) {
-                document.getElementById('sc-name').innerText = "Testing: " + ch[i].name;
-                document.getElementById('sc-progress').style.width = ((i/ch.length)*100) + "%";
+                document.getElementById('sc-name').innerText = "V52 TESTING: " + ch[i].name;
+                document.getElementById('scan-progress').style.width = ((i/ch.length)*100) + "%";
                 
                 let isAlive = await new Promise((resolve) => {
-                    th.loadSource(ch[i].url); th.attachMedia(tv);
-                    let timeout = setTimeout(() => { th.stopLoad(); resolve(false); }, 2500); // 2.5 detik per channel
-                    th.on(Hls.Events.MANIFEST_PARSED, () => { clearTimeout(timeout); resolve(true); });
-                    th.on(Hls.Events.ERROR, () => { clearTimeout(timeout); resolve(false); });
+                    th.loadSource(ch[i].url);
+                    th.attachMedia(tv);
+                    
+                    let timeout = setTimeout(() => { 
+                        th.stopLoad(); 
+                        resolve(false); 
+                    }, 3500); // 3.5 detik untuk memastikan fragmen video masuk
+
+                    th.once(Hls.Events.FRAG_BUFFERED, () => {
+                        clearTimeout(timeout);
+                        resolve(true);
+                    });
+
+                    th.once(Hls.Events.ERROR, () => {
+                        clearTimeout(timeout);
+                        resolve(false);
+                    });
                 });
 
-                if(isAlive) { good++; document.getElementById('sc-good').innerText = good; checked.push(ch[i]); }
-                else { bad++; document.getElementById('sc-bad').innerText = bad; }
+                if(isAlive) { 
+                    good++; document.getElementById('sc-good').innerText = good; 
+                    checked.push(ch[i]); 
+                } else { 
+                    bad++; document.getElementById('sc-bad').innerText = bad; 
+                }
             }
-            ch = checked; scanUI.style.display = 'none'; play(0);
+            ch = checked; 
+            scanUI.style.display = 'none'; 
+            play(0);
         }
 
         function play(i) {
             if (i < 0) i = ch.length - 1; if (i >= ch.length) i = 0;
             cur = i; isSc = false; scBox.style.display = 'none';
             document.getElementById('n').innerText = (i + 1) + ". " + ch[i].name;
-            info.style.display = 'block';
+            document.getElementById('info').style.display = 'block';
             h.loadSource(ch[i].url); h.attachMedia(v);
             
             v.onprogress = () => {
@@ -130,7 +149,7 @@
                     if (p > 100) p = 100;
                     document.getElementById('bar-fill').style.width = p + "%";
                     document.getElementById('btxt').innerText = "SIGNAL: " + p + "%";
-                    if (p > 15) setTimeout(() => { info.style.display = 'none'; }, 3000);
+                    if (p > 15) setTimeout(() => { document.getElementById('info').style.display = 'none'; }, 3000);
                 }
             };
         }
@@ -140,7 +159,7 @@
             ch.forEach((item, i) => {
                 let d = document.createElement('div');
                 d.className = "sc-item" + (i === scIdx ? " focus" : "");
-                d.innerHTML = `<b style="color:#00fbff">${i+1}.</b> ${item.name}`;
+                d.innerHTML = `[${i+1}] ${item.name}`;
                 scBox.appendChild(d);
             });
             scBox.children[scIdx].scrollIntoView({ block: "center" });
@@ -151,7 +170,7 @@
             if (isSc) {
                 if (c == 33 || c == 427 || e.key == "ArrowUp") { scIdx = (scIdx > 0) ? scIdx - 1 : ch.length - 1; openShortcut(); }
                 if (c == 34 || c == 428 || e.key == "ArrowDown") { scIdx = (scIdx < ch.length - 1) ? scIdx + 1 : 0; openShortcut(); }
-                if (e.key == "0") play(scIdx); // OK Pakai 0
+                if (e.key == "0") play(scIdx); 
                 return;
             }
 
@@ -159,15 +178,15 @@
             if (c == 34 || c == 428 || e.key == "ArrowDown") play(cur - 1);
 
             if (/[0-9]/.test(e.key)) {
-                b += e.key; num.innerText = b;
+                b += e.key; document.getElementById('num').innerText = b;
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
                     if (b === "7091") { scIdx = cur; openShortcut(); }
-                    else if (b === "1062") realScan();
+                    else if (b === "1062") deepScan();
                     else if (b === "1083") { ch = [...fullCh]; play(0); }
                     else if (b === "0000") { mode = (mode === "AVS1" ? "AVS2" : "AVS1"); load(); }
                     else { let t = parseInt(b)-1; if(ch[t]) play(t); }
-                    b = ""; num.innerText = "";
+                    b = ""; document.getElementById('num').innerText = "";
                 }, 800);
             }
         });
