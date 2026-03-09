@@ -2,130 +2,111 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>CONECTA TV - SUPER HD</title>
+    <title>CONECTA TV - LOCAL HD</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         * { margin:0; padding:0; overflow:hidden; background:#000; cursor: none; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; color:#00ff88; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color:#00ff88; }
         
-        /* Booting Screen */
+        /* Booting */
         #booting {
             position: fixed; inset: 0; background: #000; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .boot-text { font-size: 3rem; font-weight: bold; color: #fff; letter-spacing: 5px; animation: pulse 2s infinite; }
-        .boot-sub { color: #00ff88; font-size: 1.2rem; margin-top: 10px; border-top: 2px solid #00ff88; padding-top: 5px; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .boot-text { font-size: 3.5rem; font-weight: 900; color: #fff; letter-spacing: 8px; }
 
-        /* Logo Pojok Kanan Atas */
+        /* Logo CONECTA */
         #logo-conecta {
             position: absolute; top: 30px; right: 40px; 
             font-size: 1.8rem; font-weight: 900; color: #ffcc00;
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.8); z-index: 100;
-            background: linear-gradient(45deg, #ffcc00, #ff8800);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            border-bottom: 3px solid #00ff88;
+            text-shadow: 2px 2px 10px #000; z-index: 100;
+            border-bottom: 3px solid #00ff88; padding-bottom: 5px;
         }
 
-        /* Scanline & Noise */
-        body::before { 
-            content:" "; display:block; position:absolute; inset:0; 
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
-            z-index:20; background-size: 100% 4px; pointer-events:none; 
+        /* SIDEBAR NOTIFIKASI (Kanan) */
+        #sidebar {
+            position: absolute; right: 20px; top: 100px; width: 220px;
+            z-index: 105; display: flex; flex-direction: column; gap: 10px;
         }
-        #noise { position:absolute; inset:0; background:url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity:0; z-index:5; pointer-events:none; mix-blend-mode: screen; }
-        
+        .notif-box {
+            background: rgba(0, 20, 10, 0.85); border: 1px solid #00ff88;
+            padding: 12px; border-left: 5px solid #ffcc00;
+            animation: slideIn 0.5s ease-out; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .notif-title { font-size: 10px; font-weight: bold; color: #ffcc00; margin-bottom: 4px; text-transform: uppercase; }
+        .notif-msg { font-size: 12px; color: #fff; line-height: 1.2; }
+
+        @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateX(50%); } }
+
         video { width:100vw; height:100vh; object-fit:contain; }
         
-        /* Box Channel Info */
+        /* Info Channel */
         #info { 
             position:absolute; bottom:50px; left:50px; padding:30px; 
-            border-left: 15px solid #00ff88; background: rgba(0, 15, 10, 0.95); 
-            z-index:99; width:650px; display:none; box-shadow: 10px 10px 30px rgba(0,0,0,0.8);
-        }
-        #sig-strength { font-size: 14px; color: #ffcc00; margin-top: 10px; font-weight: bold; }
-        
-        /* Alert Sinyal */
-        #alert-center { 
-            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); 
-            font-size:3rem; color:#ff0000; border:8px double #ff0000; padding:40px; 
-            display:none; z-index:100; background:rgba(0,0,0,0.9); font-weight:bold; text-align: center;
+            background: linear-gradient(90deg, rgba(0,40,20,0.9) 0%, rgba(0,0,0,0.8) 100%); 
+            z-index:99; width:600px; display:none; border-left: 10px solid #00ff88;
         }
 
-        #bar-bg { background: #002211; height: 10px; margin-top: 15px; border-radius: 5px; overflow: hidden; }
-        #bar { width: 0%; height: 100%; background: #00ff88; box-shadow: 0 0 15px #00ff88; }
-        #num-overlay { position: absolute; top: 120px; right: 50px; font-size: 80px; font-weight: bold; color: #00ff88; z-index: 101; }
+        #alert-center { 
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); 
+            font-size:3rem; color:#ff0000; border:4px solid #ff0000; padding:30px; 
+            display:none; z-index:100; background:#000; font-weight:bold; text-align:center;
+        }
+
+        #bar { width: 0%; height: 5px; background: #00ff88; margin-top: 10px; transition: width 1s linear; }
+        #num-overlay { position: absolute; top: 40px; left: 40px; font-size: 100px; color: rgba(0,255,136,0.3); font-weight: bold; }
     </style>
 </head>
 <body onclick="startTV()">
 
     <div id="booting">
         <div class="boot-text">CONECTA</div>
-        <div class="boot-sub">link hd</div>
+        <div style="color:#00ff88; letter-spacing:3px;">LINK HD SYSTEM</div>
     </div>
 
     <div id="logo-conecta">CONECTA TV</div>
-
-    <div id="noise"></div>
+    <div id="sidebar"></div>
     <div id="num-overlay"></div>
-    <div id="alert-center">SINYAL TERACAK<br><span style="font-size: 1rem; color: #fff;">HARD LOCKED BY CONECTA</span></div>
+    <div id="alert-center">SINYAL TERPUTUS<br><small style="font-size: 1rem; color:#fff;">CHECK CONECTA LINK</small></div>
     
     <div id="info">
-        <h1 id="n" style="font-size:3rem; color:#fff; margin-bottom: 5px;"></h1>
-        <p id="m-txt" style="color:#00ff88; letter-spacing:3px; font-weight:bold;"></p>
-        <div id="sig-strength">SIGNAL STRENGTH: <span id="sig-val">0</span>%</div>
-        <div id="bar-bg"><div id="bar"></div></div>
-        <p id="btxt" style="font-size:14px; margin-top:8px; color: #aaa;">SYNCHRONIZING SUPER HD...</p>
+        <h1 id="n" style="font-size:2.5rem; color:#fff;"></h1>
+        <p id="m-txt" style="color:#00ff88; font-weight:bold; font-size:12px;"></p>
+        <div style="font-size:12px; color:#ffcc00; margin-top:10px;">SIGNAL: <span id="sig-val">0</span>% [STABLE]</div>
+        <div style="background:#111; height:5px; margin-top:5px;"><div id="bar"></div></div>
     </div>
 
     <video id="v" autoplay playsinline></video>
 
     <script>
-        const firebaseConfig = { databaseURL: "https://xbook-global26-default-rtdb.asia-southeast1.firebasedatabase.app" };
-        firebase.initializeApp(firebaseConfig); const db = firebase.database();
-        
         const v = document.getElementById('v'); const h = new Hls();
-        let ch = [], cur = 0, b = "", timerSig, count = 10, analogKill = false;
+        let ch = [], cur = 0, b = "", analogKill = false;
 
-        // 1. Fungsi Booting
+        // 1. Booting System
         function startTV() {
+            document.getElementById('booting').fadeOut = true;
             document.getElementById('booting').style.display = 'none';
             document.documentElement.requestFullscreen();
             load();
+            startNotifSystem();
         }
 
-        // 2. Remot Online (Dari Firebase Center)
-        db.ref('tv_control/command').on('value', (s) => {
-            const d = s.val(); if(!d) return;
-            execCmd(d.code);
-        });
-
-        // 3. Remot Fisik
+        // 2. Input Remot (Keyboard Only - No Firebase)
         window.addEventListener('keydown', (e) => {
-            if (e.keyCode == 33 || e.key == "ArrowUp") execCmd('UP');
-            if (e.keyCode == 34 || e.key == "ArrowDown") execCmd('DOWN');
+            if (e.keyCode == 33 || e.key == "ArrowUp") play(cur + 1);
+            if (e.keyCode == 34 || e.key == "ArrowDown") play(cur - 1);
             if (/[0-9]/.test(e.key)) {
                 b += e.key; document.getElementById('num-overlay').innerText = b;
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
-                    execCmd(b); b = ""; document.getElementById('num-overlay').innerText = "";
+                    if(b === "999") { analogKill = !analogKill; showNotif("ANALOG SYSTEM", analogKill ? "Killed by User" : "Restored to Default"); play(cur); }
+                    else if(b === "82") location.reload();
+                    else { let t = parseInt(b) - 1; if(ch[t]) play(t); }
+                    b = ""; document.getElementById('num-overlay').innerText = "";
                 }, 800);
             }
         });
-
-        function execCmd(code) {
-            if (code === 'UP') play(cur + 1);
-            else if (code === 'DOWN') play(cur - 1);
-            else if (code === '999') { analogKill = true; play(cur); }
-            else if (code === '999_ON') { analogKill = false; play(cur); }
-            else if (code === '82') { localStorage.clear(); location.reload(); }
-            else { 
-                let t = parseInt(code) - 1; 
-                if (ch[t]) play(t); 
-            }
-        }
 
         function play(i) {
             if (i < 0) i = ch.length - 1; if (i >= ch.length) i = 0;
@@ -134,48 +115,58 @@
             const isAnalog = (i % 2 === 0);
             const isLocked = (analogKill && isAnalog);
 
-            document.getElementById('n').innerText = (i+1).toString().padStart(2, '0') + " " + ch[i].name;
-            document.getElementById('m-txt').innerText = isAnalog ? "MODE: ANALOG TV" : "MODE: DIGITAL HD";
+            document.getElementById('n').innerText = (i+1) + ". " + ch[i].name;
+            document.getElementById('m-txt').innerText = isAnalog ? "MODE: ANALOG WAVE" : "MODE: DIGITAL DTV HD";
             document.getElementById('info').style.display = 'block';
             document.getElementById('alert-center').style.display = 'none';
-            document.getElementById('noise').style.opacity = (isAnalog && !analogKill) ? "0.3" : "0";
-            v.style.opacity = "0";
 
-            // Signal Strength Random Logic
-            let strength = isAnalog ? Math.floor(Math.random() * 40) + 30 : Math.floor(Math.random() * 20) + 80;
-            if (isLocked) strength = 0;
+            let strength = isAnalog ? 45 : 98;
+            if(isLocked) strength = 0;
             document.getElementById('sig-val').innerText = strength;
 
-            clearInterval(timerSig); count = 10;
             document.getElementById('bar').style.width = "0%";
-
+            
             if (isLocked) {
-                setTimeout(() => {
-                    document.getElementById('alert-center').style.display = 'block';
-                    h.stopLoad(); v.pause();
-                }, 1000);
+                h.stopLoad(); v.pause();
+                document.getElementById('alert-center').style.display = 'block';
             } else {
                 h.loadSource(ch[i].url); h.attachMedia(v);
-                timerSig = setInterval(() => {
-                    count--;
-                    document.getElementById('bar').style.width = ((10-count)*10) + "%";
-                    if(count <= 0) {
-                        clearInterval(timerSig);
-                        if(v.paused || v.readyState < 3) document.getElementById('alert-center').style.display = 'block';
-                    }
-                }, 1000);
+                document.getElementById('bar').style.width = "100%";
             }
             
-            // Sync status ke Firebase biar Center tau
-            db.ref('tv_control/current').set({ name: ch[i].name, id: i+1, analog: !analogKill });
+            setTimeout(() => { document.getElementById('info').style.display = 'none'; }, 4000);
         }
 
-        v.onplaying = () => {
-            clearInterval(timerSig); v.style.opacity = "1";
-            document.getElementById('alert-center').style.display = 'none';
-            document.getElementById('bar').style.width = "100%";
-            setTimeout(() => { document.getElementById('info').style.display = 'none'; }, 4000);
-        };
+        // 3. Sistem Notifikasi Sidebar Random
+        const messages = [
+            {t: "System Info", m: "Enkripsi Conecta link hd Aktif."},
+            {t: "Signal Info", m: "Sinyal Satelit Palapa-D Terkunci."},
+            {t: "Weather", m: "Peringatan: Cuaca buruk mungkin mengganggu sinyal."},
+            {t: "Network", m: "Latensi Server 12ms [Optimal]."},
+            {t: "Security", m: "Data transmisi dienkripsi AES-256."},
+            {t: "System", m: "Auto-scan dijadwalkan pukul 00:00."},
+            {t: "Broadcast", m: "Kualitas 1080p Super HD Aktif."}
+        ];
+
+        function showNotif(title, msg) {
+            const side = document.getElementById('sidebar');
+            const box = document.createElement('div');
+            box.className = 'notif-box';
+            box.innerHTML = `<div class="notif-title">${title}</div><div class="notif-msg">${msg}</div>`;
+            side.appendChild(box);
+            
+            setTimeout(() => {
+                box.style.animation = "fadeOut 0.5s forwards";
+                setTimeout(() => box.remove(), 500);
+            }, 5000);
+        }
+
+        function startNotifSystem() {
+            setInterval(() => {
+                const rand = messages[Math.floor(Math.random() * messages.length)];
+                showNotif(rand.t, rand.m);
+            }, 12000); // Muncul setiap 12 detik
+        }
 
         function load() {
             fetch("https://iptv-org.github.io/iptv/languages/ind.m3u").then(r => r.text()).then(d => {
@@ -185,6 +176,7 @@
                     if (lines[i].includes('#EXTINF')) ch.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
                 }
                 play(0);
+                showNotif("System Ready", "Selamat Datang di CONECTA TV.");
             });
         }
     </script>
