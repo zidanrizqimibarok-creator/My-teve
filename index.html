@@ -2,168 +2,135 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII-TV STUDIO 2 (TV) - V65 REBORN</title>
+    <title>ZEII-TV STUDIO 2 (TV) - V66</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        /* STYLE BARU: CYBER-RETRO */
         * { margin:0; padding:0; overflow:hidden; background:#000; cursor: none; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color:#00fbff; }
+        body { font-family: 'Courier New', monospace; color:#00ff88; }
         
-        /* Scanline TV Tabung Lebih Halus */
+        /* Efek Tabung Emerald */
         body::before { 
             content:" "; display:block; position:absolute; inset:0; 
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
-            z-index:20; background-size: 100% 3px, 3px 100%; pointer-events:none; 
+            background: linear-gradient(rgba(0, 50, 0, 0) 50%, rgba(0, 20, 0, 0.2) 50%),
+                        radial-gradient(circle, transparent 60%, rgba(0,0,0,0.4) 100%);
+            z-index:20; background-size: 100% 3px, 100% 100%; pointer-events:none; 
         }
 
-        #noise { position:absolute; inset:0; background:url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity:0; z-index:5; pointer-events:none; mix-blend-mode: screen; }
+        #noise { position:absolute; inset:0; background:url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity:0; z-index:5; pointer-events:none; mix-blend-mode: screen; filter: hue-rotate(90deg); }
+        .analog-v { filter: contrast(1.2) sepia(0.2) hue-rotate(50deg); animation: flicker 0.1s infinite; }
+        @keyframes flicker { 0% { opacity: 0.97; } 100% { opacity: 1; } }
         
-        /* Efek Distorsi Analog */
-        .analog-v { filter: contrast(1.3) brightness(1.2) saturate(1.5); animation: shake 0.2s infinite; }
-        @keyframes shake { 0% { transform: translate(0,0); } 50% { transform: translate(1px, 1px); } 100% { transform: translate(-1px, 0); } }
+        video { width:100vw; height:100vh; object-fit:contain; }
+        #ews { position:absolute; top:0; left:0; width:100%; background:#00ff88; color:#000; padding:12px; z-index:1000; display:none; font-weight:bold; }
+        #num { position:absolute; top:40px; right:60px; font-size:120px; font-weight:bold; z-index:99; color: #00ff88; text-shadow: 4px 4px #004422; }
         
-        video { width:100vw; height:100vh; object-fit:contain; transition: opacity 0.5s; }
-        
-        /* Tampilan Info Baru (Modern Glass) */
         #info { 
-            position:absolute; bottom:40px; left:40px; padding:25px; 
-            border-left: 10px solid #00fbff; background: rgba(0, 20, 30, 0.85); 
-            z-index:99; width:550px; display:none; backdrop-filter: blur(5px);
-            box-shadow: 20px 20px 50px rgba(0,0,0,0.5);
+            position:absolute; bottom:50px; left:50px; padding:25px; 
+            border: 2px solid #00ff88; background: rgba(0, 15, 5, 0.9); 
+            z-index:99; width:580px; display:none; 
         }
 
-        #ews { position:absolute; top:0; left:0; width:100%; background:#ff0000; color:white; padding:12px; z-index:1000; display:none; font-weight:bold; box-shadow: 0 5px 15px rgba(255,0,0,0.5); }
-        #num { position:absolute; top:40px; right:60px; font-size:110px; font-weight:900; z-index:99; color: #00fbff; text-shadow: 5px 5px #004444; font-style: italic; }
-        
-        /* Alert Center Baru */
         #alert-center { 
             position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); 
-            font-size:3rem; color:#ff0000; border:10px double #ff0000; padding:30px; 
-            display:none; z-index:100; background:rgba(0,0,0,0.9); font-weight:bold;
-            text-align: center; letter-spacing: 5px;
+            font-size:3.5rem; color:#00ff88; border:5px solid #00ff88; padding:30px; 
+            display:none; z-index:100; background:#000; font-weight:bold; text-align: center;
         }
 
-        #bar-container { border:1px solid #004444; height:6px; margin:15px 0; background: #001111; }
-        #bar { width:0%; height:100%; background:#00fbff; box-shadow: 0 0 10px #00fbff; }
-        
-        .marquee { display: block; width: 100%; white-space: nowrap; overflow: hidden; font-size: 22px; }
-        .marquee span { display: inline-block; padding-left: 100%; animation: marquee 20s linear infinite; }
+        #bar { width:0%; height:6px; background:#00ff88; margin-top:10px; transition: width 1s linear; box-shadow: 0 0 10px #00ff88; }
+        .marquee { display: block; width: 100%; white-space: nowrap; overflow: hidden; }
+        .marquee span { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; }
         @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
     </style>
 </head>
-<body onclick="v.play();">
+<body onclick="v.play(); document.documentElement.requestFullscreen();">
     <div id="noise"></div>
-    <div id="ews" class="marquee"><span id="ews-text">BMKG: MONITORING ACTIVE...</span></div>
+    <div id="ews" class="marquee"><span id="ews-text">BMKG SYSTEM ACTIVE...</span></div>
     <div id="num"></div>
-    <div id="alert-center">⚠️ TIDAK ADA SINYAL</div>
+    <div id="alert-center">NO SIGNAL<br><small style="font-size: 1rem;">MENCARI FREKUENSI...</small></div>
     
     <div id="info">
-        <h1 id="n" style="font-size:2.8rem; margin-bottom: 5px;"></h1>
-        <p id="m-txt" style="color:yellow; letter-spacing:3px; font-weight:bold; font-size: 14px;"></p>
-        <div id="bar-container"><div id="bar"></div></div>
-        <p id="btxt" style="font-size:13px; color: #00aaaa;">MENCARI FREKUENSI...</p>
+        <h1 id="n" style="font-size:2.5rem;"></h1>
+        <p id="m-txt" style="color:#fff; font-size: 14px;"></p>
+        <div style="background:#002211; height:6px; margin-top:15px;"><div id="bar"></div></div>
+        <p id="btxt" style="font-size:12px; margin-top:5px;">TUNING...</p>
     </div>
 
     <video id="v" autoplay playsinline></video>
 
     <script>
-        // FIREBASE XBOOK GLOBAL 26
-        const firebaseConfig = {
-          apiKey: "AIzaSyBoS3INezO0UQptcXYNZFbnPbmmf_hU8xc",
-          authDomain: "xbook-global26.firebaseapp.com",
-          databaseURL: "https://xbook-global26-default-rtdb.asia-southeast1.firebasedatabase.app",
-          projectId: "xbook-global26"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const firebaseConfig = { databaseURL: "https://xbook-global26-default-rtdb.asia-southeast1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig); const db = firebase.database();
+        const v = document.getElementById('v'); const h = new Hls();
+        let ch = [], cur = 0, b = "", timerSig, count = 10, analogOff = false;
 
-        const v = document.getElementById('v');
-        const h = new Hls();
-        let ch = [], cur = 0, b = "", timerSignal, countdown = 10;
-
-        // --- LOGIKA REMOT TV ASLI (NO CUT) ---
+        // --- KEYDOWN REMOT TV ASLI ---
         window.addEventListener('keydown', (e) => {
             const c = e.keyCode;
-            // PR+ / Panah Atas
             if (c == 33 || c == 427 || e.key == "ArrowUp") play(cur + 1);
-            // PR- / Panah Bawah
             if (c == 34 || c == 428 || e.key == "ArrowDown") play(cur - 1);
-
             if (/[0-9]/.test(e.key)) {
-                b += e.key;
-                document.getElementById('num').innerText = b;
+                b += e.key; document.getElementById('num').innerText = b;
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
-                    if (b === "7091") { /* showShortcut logic */ }
-                    else if (b === "0000") { /* switch mode logic */ }
-                    else if (b === "82") { localStorage.clear(); location.reload(); }
-                    else {
-                        let target = parseInt(b) - 1;
-                        if (ch[target]) play(target);
-                    }
+                    if (b === "82") { localStorage.clear(); location.reload(); }
+                    else if (b === "999") { analogOff = !analogOff; play(cur); }
+                    else if (b === "555") checkBMKG();
+                    else { let t = parseInt(b)-1; if(ch[t]) play(t); }
                     b = ""; document.getElementById('num').innerText = "";
                 }, 800);
             }
         });
 
+        // --- FIREBASE REMOTE ---
+        db.ref('tv_control/command').on('value', (s) => {
+            const d = s.val(); if(!d) return;
+            if(d.code === 'UP') play(cur+1);
+            else if(d.code === 'DOWN') play(cur-1);
+            else if(d.code === '999') { analogOff = !analogOff; play(cur); }
+            else if(d.code === '82') { localStorage.clear(); location.reload(); }
+            else if(d.code === '555') checkBMKG();
+            else { let n = parseInt(d.code)-1; if(ch[n]) play(n); }
+        });
+
         function play(i) {
             if (i < 0) i = ch.length - 1; if (i >= ch.length) i = 0;
             cur = i;
+            const isA = (Math.random() > 0.7) && !analogOff;
             
-            // Logika Siaran: 70% Digital, 30% Analog
-            const isAnalog = Math.random() > 0.7;
-            
-            // Update UI
-            document.getElementById('n').innerText = "CH-" + (i+1).toString().padStart(2, '0') + " " + ch[i].name.toUpperCase();
-            document.getElementById('m-txt').innerText = isAnalog ? "SIGNAL TYPE: ANALOG TV" : "SIGNAL TYPE: DIGITAL DTV";
+            document.getElementById('n').innerText = (i+1) + ". " + ch[i].name;
+            document.getElementById('m-txt').innerText = isA ? "TYPE: ANALOG WAVE" : "TYPE: DIGITAL DTV";
             document.getElementById('info').style.display = 'block';
             document.getElementById('alert-center').style.display = 'none';
-            v.style.opacity = "0"; // Sembunyikan video sampai loading
-            
-            // Efek Noise Analog
-            document.getElementById('noise').style.opacity = isAnalog ? "0.4" : "0";
-            v.className = isAnalog ? "analog-v" : "";
+            document.getElementById('noise').style.opacity = isA ? "0.4" : "0";
+            v.className = isA ? "analog-v" : "";
+            v.style.opacity = "0";
 
-            // Reset Sinyal Timeout
-            clearInterval(timerSignal);
-            countdown = 10;
+            clearInterval(timerSig); count = 10;
             document.getElementById('bar').style.width = "0%";
-            document.getElementById('btxt').innerText = "TUNING FREQUENCY: " + countdown + "s";
+            h.loadSource(ch[i].url); h.attachMedia(v);
 
-            h.loadSource(ch[i].url);
-            h.attachMedia(v);
-
-            // Jalankan Countdown
-            timerSignal = setInterval(() => {
-                countdown--;
-                document.getElementById('bar').style.width = ((10 - countdown) * 10) + "%";
-                if(countdown > 0) {
-                    document.getElementById('btxt').innerText = "TUNING FREQUENCY: " + countdown + "s";
-                } else {
-                    clearInterval(timerSignal);
-                    // JIKA DETIK HABIS DAN VIDEO BELUM PLAYING
+            timerSig = setInterval(() => {
+                count--;
+                document.getElementById('bar').style.width = ((10-count)*10) + "%";
+                document.getElementById('btxt').innerText = "SYNCHRONIZING: " + count + "s";
+                if(count <= 0) {
+                    clearInterval(timerSig);
                     if(v.paused || v.readyState < 3) {
-                        v.style.opacity = "0";
                         document.getElementById('alert-center').style.display = 'block';
-                        document.getElementById('btxt').innerText = "STATUS: NO SIGNAL";
                     }
                 }
             }, 1000);
 
-            // Sync ke HP Center
             db.ref('tv_control/current').set({ name: ch[i].name, id: i+1 });
         }
 
-        // Jika Sinyal Berhasil Muncul
         v.onplaying = () => {
-            clearInterval(timerSignal);
-            v.style.opacity = "1";
+            clearInterval(timerSig); v.style.opacity = "1";
             document.getElementById('alert-center').style.display = 'none';
             document.getElementById('bar').style.width = "100%";
-            document.getElementById('btxt').innerText = "SIGNAL STATUS: LOCKED OK";
+            document.getElementById('btxt').innerText = "SIGNAL LOCKED";
             setTimeout(() => { document.getElementById('info').style.display = 'none'; }, 3000);
         };
 
@@ -173,7 +140,8 @@
                 const gempa = await fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json').then(r => r.json());
                 const d = gempa.Infogempa.gempa;
                 document.getElementById('ews').style.display = "block";
-                document.getElementById('ews-text').innerText = `[INFO BMKG] LOKASI TV: ${geo.city.toUpperCase()} | GEMPA M: ${d.Magnitude} | WILAYAH: ${d.Wilayah} | POTENSI: ${d.Potensi} | TETAP WASPADA!`;
+                document.getElementById('ews-text').innerText = `[BMKG] WILAYAH: ${geo.city.toUpperCase()} | GEMPA: ${d.Magnitude} SR | ${d.Wilayah} | ${d.Potensi}`;
+                setTimeout(()=> document.getElementById('ews').style.display="none", 20000);
             } catch (e) {}
         }
 
@@ -181,15 +149,11 @@
             fetch("https://iptv-org.github.io/iptv/languages/ind.m3u").then(r => r.text()).then(d => {
                 const lines = d.split('\n');
                 for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].includes('#EXTINF')) {
-                        ch.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
-                    }
+                    if (lines[i].includes('#EXTINF')) ch.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
                 }
-                play(0);
-                checkBMKG();
+                play(0); checkBMKG();
             });
         }
-        
         load();
     </script>
 </body>
