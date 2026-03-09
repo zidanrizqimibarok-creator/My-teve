@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>CONECTA TV V74 - FIX NEWS & BUFFER</title>
+    <title>CONECTA TV V76 - AVS SYSTEM</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
     <style>
         * { margin:0; padding:0; overflow:hidden; background:#000; cursor: none; }
@@ -11,55 +11,49 @@
         #booting { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .boot-text { font-size: 3.5rem; font-weight: 900; color: #fff; letter-spacing: 8px; }
 
-        #logo-conecta { position: absolute; top: 30px; right: 40px; font-size: 1.8rem; font-weight: 900; color: #ffcc00; z-index: 100; border-bottom: 3px solid #00ff88; padding-bottom: 5px; }
+        /* LOGO CONECTA HD */
+        #logo-conecta { position: absolute; top: 30px; right: 40px; text-align: right; z-index: 100; }
+        .hd-tag { font-size: 12px; background: #ffcc00; color: #000; padding: 1px 4px; font-weight: bold; border-radius: 2px; display: inline-block; vertical-align: top; }
+        .con-text { font-size: 2rem; font-weight: 900; color: #ffcc00; border-bottom: 3px solid #00ff88; line-height: 1; display: block; }
 
-        /* SIDEBAR BERITA REAL-TIME */
-        #sidebar { position: absolute; right: 20px; top: 100px; width: 260px; z-index: 105; display: flex; flex-direction: column; gap: 10px; }
-        .notif-box { background: rgba(0, 15, 5, 0.9); border: 1px solid #00ff88; padding: 12px; border-left: 5px solid #ffcc00; animation: slideIn 0.5s ease-out; box-shadow: 0 4px 10px #000; }
-        .notif-title { font-size: 10px; font-weight: bold; color: #ffcc00; text-transform: uppercase; margin-bottom: 5px; }
-        .notif-msg { font-size: 11px; color: #fff; line-height: 1.4; }
+        /* NOTIFIKASI AVS DI KIRI */
+        #avs-notif { position: absolute; top: 40px; left: 40px; font-size: 1.5rem; font-weight: 900; color: #00ff88; background: rgba(0,0,0,0.7); padding: 10px 20px; border-left: 5px solid #00ff88; z-index: 115; display: none; text-transform: uppercase; }
+
+        /* SIDEBAR BERITA */
+        #sidebar { position: absolute; right: 20px; top: 120px; width: 280px; z-index: 105; display: flex; flex-direction: column; gap: 12px; }
+        .notif-box { background: rgba(0, 10, 5, 0.95); border: 1.5px solid #00ff88; padding: 15px; border-left: 6px solid #ffcc00; animation: slideIn 0.5s ease-out; }
+        .notif-msg { font-size: 13px; color: #fff; line-height: 1.4; }
 
         @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
 
-        /* BUFFER DI DALAM KOTAK CH */
-        .spinner {
-            width: 20px; height: 20px; border: 3px solid rgba(0,255,136,0.3);
-            border-top: 3px solid #00ff88; border-radius: 50%;
-            animation: spin 0.8s linear infinite; display: inline-block;
-            vertical-align: middle; margin-left: 15px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         video { width:100vw; height:100vh; object-fit:contain; }
         
-        /* Kotak Info Channel */
-        #info { 
-            position:absolute; bottom:50px; left:50px; padding:30px; 
-            background: linear-gradient(90deg, rgba(0,40,20,0.95) 0%, rgba(0,0,0,0.85) 100%); 
-            z-index:99; width:650px; display:none; border-left: 10px solid #00ff88;
-        }
-
-        #alert-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3rem; color:#ff0000; border:4px solid #ff0000; padding:30px; display:none; z-index:110; background:#000; font-weight:bold; text-align:center; }
-        #num { position: absolute; top: 40px; left: 40px; font-size: 100px; color: rgba(0,255,136,0.25); font-weight: bold; z-index: 100; }
-        #bar { width: 0%; height: 6px; background: #ffcc00; margin-top: 15px; transition: width 1s linear; box-shadow: 0 0 10px #ffcc00; }
+        /* INFO BOX */
+        #info { position:absolute; bottom:50px; left:50px; padding:35px; background: linear-gradient(180deg, rgba(0,30,15,0.95) 0%, rgba(0,0,0,0.9) 100%); z-index:99; width:680px; display:none; border-left: 12px solid #00ff88; }
+        #loading-wrap { width: 100%; height: 8px; background: #111; margin-top: 15px; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
+        #loading-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #ffcc00, #00ff88); transition: width 0.3s; }
+        
+        #alert-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3.5rem; color:#ff4444; border:5px solid #ff4444; padding:40px; display:none; z-index:110; background:#000; font-weight:bold; text-align:center; }
+        #num { position: absolute; top: 100px; left: 40px; font-size: 110px; color: rgba(0,255,136,0.2); font-weight: 900; z-index: 100; }
+        .stat-label { font-size: 13px; color: #00ff88; font-weight: bold; margin-top: 8px; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body onclick="startTV()">
 
-    <div id="booting"><div class="boot-text">CONECTA</div><div style="color:#00ff88; letter-spacing:3px;">LINK HD SYSTEM</div></div>
-    <div id="logo-conecta">CONECTA TV</div>
+    <div id="booting"><div class="boot-text">CONECTA</div><div style="color:#00ff88; letter-spacing:4px; font-weight: bold;">ULTIMATE HD LINK</div></div>
+    
+    <div id="logo-conecta"><span class="hd-tag">HD</span><span class="con-text">CONECTA TV</span></div>
+    <div id="avs-notif"></div>
     <div id="sidebar"></div>
     <div id="num"></div>
-    <div id="alert-center">NO SIGNAL<br><small id="err-desc" style="font-size: 1.2rem; color:#fff;">MENCARI FREKUENSI...</small></div>
+    <div id="alert-center">NO SIGNAL<br><small id="err-desc" style="font-size: 1.2rem; color:#fff;">MENGHUBUNGKAN...</small></div>
     
     <div id="info">
-        <div style="display:flex; align-items:center;">
-            <h1 id="n" style="font-size:2.5rem; color:#fff;"></h1>
-            <div id="ch-loader" class="spinner"></div>
-        </div>
-        <p id="m-txt" style="color:#00ff88; font-weight:bold; font-size:14px; margin-top:5px;"></p>
-        <div style="font-size:12px; color:#ffcc00; margin-top:10px;">SIGNAL STRENGTH: <span id="sig-val">0</span>%</div>
-        <div style="background:#111; height:6px; margin-top:5px;"><div id="bar"></div></div>
+        <h1 id="n" style="font-size:2.8rem; color:#fff;"></h1>
+        <p id="m-txt" style="color:#ffcc00; font-weight:bold; font-size:15px;"></p>
+        <div class="stat-label"><span>BUFFERING DATA...</span><span id="load-pc">0%</span></div>
+        <div id="loading-wrap"><div id="loading-bar"></div></div>
+        <div class="stat-label" style="margin-top: 12px; color: #888;"><span>SIGNAL STRENGTH</span><span id="sig-val">0%</span></div>
     </div>
 
     <video id="v" autoplay playsinline></video>
@@ -68,15 +62,18 @@
         const v = document.getElementById('v');
         const num = document.getElementById('num');
         const info = document.getElementById('info');
+        const lBar = document.getElementById('loading-bar');
+        const lText = document.getElementById('load-pc');
+        const avsBox = document.getElementById('avs-notif');
         const h = new Hls();
-        let ch = [], cur = 0, b = "", mode = "AVS1", analogKill = false, signalTimer;
+        let ch = [], cur = 0, b = "", mode = "AVS1", analogKill = false, signalTimer, loadInterval;
 
         function startTV() {
             document.getElementById('booting').style.display = 'none';
             document.documentElement.requestFullscreen();
             load();
             fetchNews();
-            setInterval(fetchNews, 45000); 
+            setInterval(fetchNews, 50000); 
         }
 
         function play(i) {
@@ -88,78 +85,87 @@
             const isAnalog = (i % 2 === 0);
             const isLocked = (analogKill && isAnalog);
 
-            document.getElementById('n').innerText = (i+1) + ". " + ch[i].name;
-            document.getElementById('m-txt').innerText = isAnalog ? "SIGNAL: ANALOG WAVE" : "SIGNAL: DIGITAL DTV HD";
+            document.getElementById('n').innerText = (i+1).toString().padStart(2, '0') + ". " + ch[i].name;
+            document.getElementById('m-txt').innerText = isAnalog ? "CONECTA ANALOG WAVE" : "CONECTA DIGITAL DTV-HD";
             info.style.display = 'block';
-            document.getElementById('ch-loader').style.display = 'inline-block';
             document.getElementById('alert-center').style.display = 'none';
 
-            let strength = isAnalog ? 45 : 99;
+            let progress = 0;
+            lBar.style.width = "0%";
+            lText.innerText = "0%";
+            clearInterval(loadInterval);
+
+            let strength = isAnalog ? (Math.floor(Math.random() * 20) + 40) : 99;
             if(isLocked) strength = 0;
-            document.getElementById('sig-val').innerText = strength;
-            document.getElementById('bar').style.width = "0%";
+            document.getElementById('sig-val').innerText = strength + "%";
 
             clearTimeout(signalTimer);
             if (isLocked) {
                 h.stopLoad(); v.pause();
                 document.getElementById('alert-center').style.display = 'block';
-                document.getElementById('err-desc').innerText = "SYSTEM: ANALOG KILLED";
-                document.getElementById('ch-loader').style.display = 'none';
+                document.getElementById('err-desc').innerText = "ERROR: ANALOG SYSTEM KILLED";
             } else {
                 h.loadSource(ch[i].url);
                 h.attachMedia(v);
-                
-                // STICKY INFO: Kotak tidak hilang sampai 10 detik atau video jalan
+                loadInterval = setInterval(() => {
+                    if (progress < 95) {
+                        progress += Math.floor(Math.random() * 15);
+                        if(progress > 95) progress = 95;
+                        lBar.style.width = progress + "%";
+                        lText.innerText = progress + "%";
+                    }
+                }, 200);
+
                 signalTimer = setTimeout(() => {
                     if (v.paused || v.readyState < 3) {
                         h.stopLoad();
                         document.getElementById('alert-center').style.display = 'block';
-                        document.getElementById('err-desc').innerText = "LIMIT: 10S SIGNAL TIMEOUT";
-                        document.getElementById('ch-loader').style.display = 'none';
-                        // Baru boleh hilang setelah 3 detik tampil error
-                        setTimeout(() => { info.style.display = 'none'; }, 3000);
+                        document.getElementById('err-desc').innerText = "10S SIGNAL TIMEOUT";
+                        clearInterval(loadInterval);
                     }
                 }, 10000); 
             }
         }
 
-        // FIX BERITA REAL-TIME (Tanpa CORS Error)
         async function fetchNews() {
             try {
-                const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id'));
+                const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.antaranews.com/rss/terpopuler.xml'));
                 const json = await res.json();
                 const parser = new DOMParser();
                 const xml = parser.parseFromString(json.contents, "text/xml");
-                const items = Array.from(xml.querySelectorAll("item")).slice(0, 15);
-                const item = items[Math.floor(Math.random() * items.length)];
-                showNotif("CONECTA NEWS", item.querySelector("title").textContent);
-            } catch (e) {
-                showNotif("SYSTEM", "Sinkronisasi berita tertunda...");
-            }
+                const items = Array.from(xml.querySelectorAll("item"));
+                const item = items[Math.floor(Math.random() * 10)];
+                showNotif("BREAKING NEWS", item.querySelector("title").textContent);
+            } catch (e) { }
         }
 
         function showNotif(title, msg) {
             const side = document.getElementById('sidebar');
             const box = document.createElement('div');
             box.className = 'notif-box';
-            box.innerHTML = `<div class="notif-title">${title}</div><div class="notif-msg">${msg}</div>`;
+            box.innerHTML = `<div style="font-size:10px; color:#ffcc00; font-weight:bold;">${title}</div><div class="notif-msg">${msg}</div>`;
             side.appendChild(box);
-            setTimeout(() => { box.style.opacity = "0"; setTimeout(() => box.remove(), 500); }, 10000);
+            setTimeout(() => { box.style.opacity = "0"; setTimeout(() => box.remove(), 500); }, 12000);
         }
 
-        // --- KEYDOWN ASLI ZIDAN ---
+        // --- KEYDOWN ASLI ZIDAN (LOGIKA 0000 DIPERBAIKI) ---
         window.addEventListener('keydown', (e) => {
             const c = e.keyCode;
             if (c == 33 || c == 427 || e.key == "ArrowUp") play(cur + 1);
             if (c == 34 || c == 428 || e.key == "ArrowDown") play(cur - 1);
-
             if (/[0-9]/.test(e.key)) {
                 b += e.key;
                 num.innerText = b;
                 clearTimeout(window.t);
                 window.t = setTimeout(() => {
                     if (b === "999") { analogKill = !analogKill; play(cur); }
-                    else if (b === "0000") { mode = (mode === "AVS1" ? "AVS2" : "AVS1"); load(); }
+                    else if (b === "0000") { 
+                        mode = (mode === "AVS1" ? "AVS2" : "AVS1"); 
+                        avsBox.innerText = "AVS MODE: " + (mode === "AVS1" ? "1" : "2");
+                        avsBox.style.display = "block";
+                        setTimeout(() => avsBox.style.display = "none", 3000);
+                        load(); // Reload channel berdasarkan mode
+                    }
                     else {
                         let target = parseInt(b) - 1;
                         if (ch[target]) play(target);
@@ -171,18 +177,19 @@
 
         v.onplaying = () => {
             clearTimeout(signalTimer);
-            document.getElementById('ch-loader').style.display = 'none';
-            document.getElementById('bar').style.width = "100%";
-            // Info hilang 3 detik setelah video stabil
-            setTimeout(() => { info.style.display = 'none'; }, 3000);
+            clearInterval(loadInterval);
+            lBar.style.width = "100%";
+            lText.innerText = "100%";
+            setTimeout(() => { info.style.display = 'none'; }, 2500);
         };
 
         function load() {
-            // Backup M3U jika utama gagal agar channel tidak kosong
-            const m3u = "https://raw.githubusercontent.com/mizancok/iptv/master/indonesia.m3u";
-            const fallback = "https://iptv-org.github.io/iptv/languages/ind.m3u";
-            
-            fetch(fallback).then(r => r.text()).then(d => {
+            // AVS1 = Indonesia, AVS2 = International/Kids
+            let targetUrl = (mode === "AVS1") ? 
+                "https://iptv-org.github.io/iptv/languages/ind.m3u" : 
+                "https://iptv-org.github.io/iptv/categories/kids.m3u";
+
+            fetch(targetUrl).then(r => r.text()).then(d => {
                 ch = [];
                 const lines = d.split('\n');
                 for (let i = 0; i < lines.length; i++) {
@@ -192,8 +199,8 @@
                         if(url.startsWith('http')) ch.push({ name, url });
                     }
                 }
-                if(ch.length > 0) play(0);
-            }).catch(e => showNotif("ERROR", "Gagal memuat daftar channel."));
+                play(0);
+            });
         }
     </script>
 </body>
