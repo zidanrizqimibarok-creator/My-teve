@@ -2,219 +2,118 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>ZEII TV V11 - AAA3 V61 EWS BMKG</title>
+    <title>ZEII-TV STUDIO 2 (TV)</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        * { margin: 0; padding: 0; overflow: hidden; background: #000; }
-        body { font-family: 'Courier New', Courier, monospace; color: #00fbff; text-shadow: 2px 2px #000; }
+        * { margin:0; padding:0; overflow:hidden; background:#000; }
+        body { font-family: 'Courier New', monospace; color:#00fbff; cursor: none; }
+        /* Efek Tabung Analog */
+        body::before { content:" "; display:block; position:absolute; inset:0; background:linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%); z-index:20; background-size:100% 4px; pointer-events:none; }
+        #noise { position:absolute; inset:0; background:url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity:0; z-index:5; pointer-events:none; mix-blend-mode:overlay; }
+        .analog-v { filter: grayscale(0.4) contrast(1.2); animation: flicker 0.1s infinite; }
+        @keyframes flicker { 0% { opacity: 0.98; } 100% { opacity: 1; } }
         
-        /* Efek Tabung */
-        body::before {
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
-            z-index: 20; background-size: 100% 4px; pointer-events: none;
-        }
-
-        #noise { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://upload.wikimedia.org/wikipedia/commons/5/5a/Static_noise.gif'); opacity: 0; z-index: 5; pointer-events: none; mix-blend-mode: overlay; }
-        .analog-filter { filter: grayscale(0.4) contrast(1.2); animation: flicker 0.1s infinite; }
-        @keyframes flicker { 0% { opacity: 0.97; } 100% { opacity: 1; } }
-
-        video { width: 100vw; height: 100vh; object-fit: contain; }
-        #num { position: absolute; top: 30px; right: 50px; font-size: 80px; font-weight: bold; z-index: 99; }
-
-        /* EWS BMKG STYLE */
-        #ews {
-            position: absolute; top: 0; left: 0; width: 100%; background: red; color: white;
-            font-weight: bold; padding: 10px 0; z-index: 1000; display: none;
-            border-bottom: 4px solid white;
-        }
-        .marquee { display: block; width: 100%; white-space: nowrap; overflow: hidden; font-size: 24px; }
-        .marquee span { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; }
+        video { width:100vw; height:100vh; object-fit:contain; }
+        #ews { position:absolute; top:0; left:0; width:100%; background:red; color:white; padding:10px; z-index:1000; display:none; font-weight:bold; border-bottom:3px solid white; }
+        #num { position:absolute; top:30px; right:50px; font-size:100px; font-weight:bold; z-index:99; text-shadow: 4px 4px #000; }
+        #info { position:absolute; bottom:60px; left:60px; padding:20px; border:4px solid #00fbff; background:rgba(0,30,30,0.9); z-index:99; width:500px; display:none; }
+        #alert-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3.5rem; color:red; border:6px solid red; padding:25px; display:none; z-index:100; background:#000; font-weight:bold; }
+        .marquee { display: block; width: 100%; white-space: nowrap; overflow: hidden; }
+        .marquee span { display: inline-block; padding-left: 100%; animation: marquee 20s linear infinite; }
         @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
-
-        #info { position: absolute; bottom: 60px; left: 60px; padding: 20px; border: 4px solid #00fbff; background: rgba(0, 40, 40, 0.9); z-index: 99; width: 450px; display: none; }
-        #alert-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: #ff0000; font-weight: bold; border: 4px solid #ff0000; padding: 20px; display: none; z-index: 100; background: #000; }
-        
-        /* PICKER 1945 & SHORTCUT */
-        #shortcut { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 75%; background: rgba(0, 10, 10, 0.98); border: 2px solid #00fbff; display: none; z-index: 500; padding: 20px; overflow-y: auto; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-        .sc-item { padding: 10px; border: 1px solid #004444; color: #008888; }
-        .sc-item.focus { background: #00fbff; color: #000; font-weight: bold; border: 2px solid white; }
-        
-        #scan-ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; padding: 30px; background: #002222; border: 4px solid #00fbff; display: none; z-index: 1000; text-align: center; }
-        #usb-input { display: none; }
     </style>
 </head>
-<body onclick="document.documentElement.requestFullscreen(); v.play();">
-
-    <div id="ews"><div class="marquee"><span id="ews-text">PERINGATAN DINI: MENDETEKSI WILAYAH...</span></div></div>
+<body onclick="v.play(); document.documentElement.requestFullscreen();">
     <div id="noise"></div>
+    <div id="ews" class="marquee"><span id="ews-text">MENDETEKSI SINYAL BMKG...</span></div>
     <div id="num"></div>
     <div id="alert-center">⚠️ SINYAL TERACAK</div>
-    <input type="file" id="usb-input" accept=".m3u,.mp4">
-
-    <div id="scan-ui">
-        <h2>TURBO SCAN 2.0</h2>
-        <div id="scan-perc" style="font-size: 50px;">0%</div>
-        <p id="sc-name">INITIALIZING...</p>
-    </div>
-
-    <div id="shortcut"></div>
-
+    
     <div id="info">
-        <h2 id="n"></h2>
-        <p id="mode-text" style="color: yellow;"></p>
-        <div style="border: 2px solid #00fbff; height: 10px; margin: 10px 0;"><div id="bar-fill" style="width:0%; height:100%; background:#00fbff;"></div></div>
-        <p id="btxt">TUNING: 10s</p>
+        <h2 id="n" style="font-size:2.2rem;"></h2>
+        <p id="m-txt" style="color:yellow; letter-spacing:2px; font-weight:bold;"></p>
+        <div style="border:2px solid #00fbff; height:8px; margin:10px 0;"><div id="bar" style="width:0%; height:100%; background:#00fbff;"></div></div>
+        <p id="btxt" style="font-size:14px;">SIGNAL TUNING: 10s</p>
     </div>
 
-    <video id="v" playsinline autoplay></video>
-    <video id="test-v" style="display:none;" muted></video>
+    <video id="v" autoplay playsinline></video>
+    <video id="tv" style="display:none;" muted></video>
 
     <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyBoS3INezO0UQptcXYNZFbnPbmmf_hU8xc",
+          authDomain: "xbook-global26.firebaseapp.com",
+          databaseURL: "https://xbook-global26-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "xbook-global26"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         const v = document.getElementById('v');
-        const tv = document.getElementById('test-v');
-        const h = new Hls(); const th = new Hls();
-        const info = document.getElementById('info');
-        const btxt = document.getElementById('btxt');
-        const num = document.getElementById('num');
-        const scBox = document.getElementById('shortcut');
-        const alertBox = document.getElementById('alert-center');
-        const ewsBox = document.getElementById('ews');
-        const ewsText = document.getElementById('ews-text');
+        const h = new Hls();
+        let ch = [], cur = 0, analogKill = false;
 
-        let ch = [], fullCh = [], cur = 0, scIdx = 0, b = "", mode = "AVS1", timerCD, count = 10, isSc = false, isPicker = false;
-
-        // 1. EWS BMKG (Mendeteksi Wilayah & Gempa)
-        async function checkBMKG() {
-            try {
-                const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
-                const wilayah = geo.city + ", " + geo.region;
-                const gempa = await fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json').then(r => r.json());
-                const d = gempa.Infogempa.gempa;
-                
-                ewsBox.style.display = "block";
-                ewsText.innerText = `[INFO BMKG] WILAYAH: ${wilayah.toUpperCase()} | TERDETEKSI GEMPA M: ${d.Magnitude} | LOKASI: ${d.Wilayah} | POTENSI: ${d.Potensi} | TETAP WASPADA!`;
-                
-                // Sembunyikan setelah 30 detik
-                setTimeout(() => { ewsBox.style.display = "none"; }, 30000);
-            } catch (e) { console.log("BMKG Error"); }
-        }
-
-        // 2. NAVIGASI REMOT (FULL VERSION - NO DELETION)
-        window.addEventListener('keydown', (e) => {
-            const c = e.keyCode;
-
-            // Jika dalam mode Shortcut (7091) atau Picker (1945)
-            if (isSc || isPicker) {
-                if (c == 33 || c == 427 || e.key == "ArrowUp") { scIdx = (scIdx > 0) ? scIdx - 1 : (isPicker ? fullCh.length-1 : ch.length-1); renderList(); }
-                if (c == 34 || c == 428 || e.key == "ArrowDown") { scIdx = (scIdx < (isPicker ? fullCh.length-1 : ch.length-1)) ? scIdx + 1 : 0; renderList(); }
-                
-                if (e.key == "0") { // OK
-                    if (isPicker) {
-                        if (!ch.find(x => x.url === fullCh[scIdx].url)) {
-                            ch.push(fullCh[scIdx]);
-                            localStorage.setItem('aaa3_channels', JSON.stringify(ch));
-                        }
-                    }
-                    play(isPicker ? ch.length-1 : scIdx);
-                    closeMenu();
-                }
-                if (e.key == "1") closeMenu(); // BATAL
-                return;
-            }
-
-            if (c == 33 || c == 427 || e.key == "ArrowUp") play(cur + 1);
-            if (c == 34 || c == 428 || e.key == "ArrowDown") {
-                if (b === "82") { localStorage.removeItem('aaa3_channels'); ch = [...fullCh]; play(0); b = ""; num.innerText = ""; }
-                else play(cur - 1);
-            }
-
-            if (/[0-9]/.test(e.key)) {
-                b += e.key; num.innerText = b;
-                clearTimeout(window.t);
-                window.t = setTimeout(() => {
-                    if (b === "7091") { scIdx = cur; isSc = true; renderList(); }
-                    else if (b === "1945") { scIdx = 0; isPicker = true; renderList(); }
-                    else if (b === "1062") turboScan();
-                    else if (b === "2701") document.getElementById('usb-input').click();
-                    else if (b === "0000") { mode = (mode === "AVS1" ? "AVS2" : "AVS1"); load(); }
-                    else if (b === "555") checkBMKG(); // TEST BMKG
-                    else if (b !== "82") { let t = parseInt(b)-1; if(ch[t]) play(t); }
-                    if (b !== "82") { b = ""; num.innerText = ""; }
-                }, 800);
-            }
+        // 1. LISTEN COMMAND DARI HP
+        db.ref('tv_control/command').on('value', (s) => {
+            const cmd = s.val();
+            if(!cmd) return;
+            execRemote(cmd.code);
         });
 
-        function closeMenu() { isSc = false; isPicker = false; scBox.style.display = 'none'; }
+        function execRemote(code) {
+            document.getElementById('num').innerText = code;
+            setTimeout(() => document.getElementById('num').innerText = "", 2500);
 
-        function renderList() {
-            scBox.innerHTML = ""; scBox.style.display = 'grid';
-            let list = isPicker ? fullCh : ch;
-            list.forEach((it, i) => {
-                let d = document.createElement('div');
-                d.className = "sc-item" + (i === scIdx ? " focus" : "");
-                d.innerHTML = `${isPicker ? "[RECOVERY]" : "[CH]"} ${i+1}. ${it.name}`;
-                scBox.appendChild(d);
-            });
-            scBox.children[scIdx].scrollIntoView({ block: "center" });
-        }
-
-        // 3. CORE SYSTEM (SCAN, PLAY, LOAD)
-        async function turboScan() {
-            document.getElementById('scan-ui').style.display = 'block';
-            let good = 0, checked = [];
-            for(let i=0; i < ch.length; i++) {
-                document.getElementById('scan-perc').innerText = Math.round((i/ch.length)*100) + "%";
-                let ok = await check(ch[i].url, 2000);
-                if(!ok) ok = await check(ch[i].url, 3000); // Double scan
-                if(ok) { good++; checked.push(ch[i]); }
-            }
-            ch = checked; localStorage.setItem('aaa3_channels', JSON.stringify(ch));
-            document.getElementById('scan-ui').style.display = 'none'; play(0);
-        }
-
-        function check(u, t) {
-            return new Promise((r) => {
-                th.loadSource(u); th.attachMedia(tv);
-                let tm = setTimeout(() => { th.stopLoad(); r(false); }, t);
-                th.once(Hls.Events.FRAG_BUFFERED, () => { clearTimeout(tm); r(true); });
-                th.once(Hls.Events.ERROR, () => { clearTimeout(tm); r(false); });
-            });
+            if(code === 'UP') play(cur+1);
+            else if(code === 'DOWN') play(cur-1);
+            else if(code === '999') { analogKill = !analogKill; play(cur); }
+            else if(code === '82') { localStorage.clear(); db.ref('tv_control').remove(); location.reload(); }
+            else { let n = parseInt(code)-1; if(ch[n]) play(n); }
         }
 
         function play(i) {
             if (i < 0) i = ch.length - 1; if (i >= ch.length) i = 0;
-            cur = i; alertBox.style.display = 'none';
-            const isA = ch[i].type === 'A';
-            document.getElementById('n').innerText = "CH " + (i + 1) + " " + ch[i].name;
-            document.getElementById('mode-text').innerText = isA ? "MODE: ANALOG" : "MODE: DIGITAL";
-            info.style.display = 'block';
+            cur = i;
+            const isA = (Math.random() > 0.7) && !analogKill;
+            
+            document.getElementById('n').innerText = (i+1) + ". " + ch[i].name;
+            document.getElementById('m-txt').innerText = isA ? "MODE: ANALOG" : "MODE: DIGITAL";
+            document.getElementById('info').style.display = 'block';
             document.getElementById('noise').style.opacity = isA ? "0.3" : "0";
-            v.className = isA ? "analog-filter" : "";
-
-            clearInterval(timerCD); count = 10;
-            btxt.innerText = "TUNING: " + count + "s";
+            v.className = isA ? "analog-v" : "";
+            
+            document.getElementById('alert-center').style.display = 'none';
             h.loadSource(ch[i].url); h.attachMedia(v);
-            timerCD = setInterval(() => {
-                count--;
-                if(count >= 0) btxt.innerText = "TUNING: " + count + "s";
-                else { clearInterval(timerCD); if(v.readyState < 3) alertBox.style.display = 'block'; setTimeout(() => { info.style.display = 'none'; }, 2000); }
-            }, 1000);
-            v.onplaying = () => { alertBox.style.display = 'none'; document.getElementById('bar-fill').style.width = "100%"; btxt.innerText = "SIGNAL: OK"; };
+            
+            // Kirim balik status ke HP
+            db.ref('tv_control/current').set({ name: ch[i].name, id: i+1 });
+
+            v.onplaying = () => {
+                document.getElementById('bar').style.width = "100%";
+                document.getElementById('btxt').innerText = "SIGNAL: LOCKED OK";
+                setTimeout(() => document.getElementById('info').style.display = 'none', 3000);
+            };
+        }
+
+        async function checkBMKG() {
+            try {
+                const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
+                const gempa = await fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json').then(r => r.json());
+                const d = gempa.Infogempa.gempa;
+                document.getElementById('ews').style.display = "block";
+                document.getElementById('ews-text').innerText = `[EWS BMKG] LOKASI: ${geo.city.toUpperCase()} | GEMPA MAG: ${d.Magnitude} | WILAYAH: ${d.Wilayah} | POTENSI: ${d.Potensi}`;
+            } catch (e) {}
         }
 
         function load() {
-            const saved = localStorage.getItem('aaa3_channels');
-            let url = (mode === "AVS1") ? "https://iptv-org.github.io/iptv/languages/ind.m3u" : "https://iptv-org.github.io/iptv/categories/kids.m3u";
-            fetch(url).then(r => r.text()).then(d => {
-                const lines = d.split('\n'); let temp = [];
+            fetch("https://iptv-org.github.io/iptv/languages/ind.m3u").then(r => r.text()).then(d => {
+                const lines = d.split('\n');
                 for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].includes('#EXTINF')) temp.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim(), type: Math.random()>0.7?'A':'D' });
+                    if (lines[i].includes('#EXTINF')) ch.push({ name: lines[i].split(',')[1].trim(), url: lines[i+1].trim() });
                 }
-                fullCh = [...temp];
-                ch = (saved && mode === "AVS1") ? JSON.parse(saved) : [...temp];
-                play(0);
-                checkBMKG(); // Cek BMKG saat pertama nyala
+                play(0); checkBMKG();
             });
         }
         load();
